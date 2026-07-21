@@ -44,6 +44,20 @@ protocol PhotoSessionProviding {
     func stop()
 }
 
+protocol CaptureSessionRunning: AnyObject {
+    var isRunning: Bool { get }
+    func startRunning()
+    func stopRunning()
+}
+
+protocol PhotoOutputCapturing: AnyObject {
+    func capturePhoto(with settings: AVCapturePhotoSettings,
+                      delegate: AVCapturePhotoCaptureDelegate)
+}
+
+extension AVCaptureSession: CaptureSessionRunning {}
+extension AVCapturePhotoOutput: PhotoOutputCapturing {}
+
 protocol ScheduledCancellation {
     func cancel()
 }
@@ -419,19 +433,19 @@ final class DispatchCameraTeardownScheduler: CameraTeardownScheduling {
 }
 
 final class AVPhotoSession: PhotoSessionProviding {
-    private let session: AVCaptureSession
-    private let output: AVCapturePhotoOutput
+    private let session: CaptureSessionRunning
+    private let output: PhotoOutputCapturing
     private let queue: DispatchQueue
     private let warmup: CameraWarmup
     private let lifecycle = PhotoSessionLifecycle()
 
-    private init(session: AVCaptureSession,
-                 output: AVCapturePhotoOutput,
-                 queue: DispatchQueue = DispatchQueue(
-                    label: "jp.sone.BLEUnlock.camera-capture"
-                 ),
-                 warmupScheduler: CameraScheduling? = nil,
-                 warmupInterval: TimeInterval = 1) {
+    init(session: CaptureSessionRunning,
+         output: PhotoOutputCapturing,
+         queue: DispatchQueue = DispatchQueue(
+            label: "jp.sone.BLEUnlock.camera-capture"
+         ),
+         warmupScheduler: CameraScheduling? = nil,
+         warmupInterval: TimeInterval = 1) {
         self.session = session
         self.output = output
         self.queue = queue

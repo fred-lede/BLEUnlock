@@ -61,6 +61,31 @@ final class StubCameraScheduler: CameraScheduling {
     }
 }
 
+final class StubAVCaptureSession: CaptureSessionRunning {
+    private(set) var startRunningCalls = 0
+    private(set) var stopRunningCalls = 0
+    var isRunning = false
+
+    func startRunning() {
+        startRunningCalls += 1
+        isRunning = true
+    }
+
+    func stopRunning() {
+        stopRunningCalls += 1
+        isRunning = false
+    }
+}
+
+final class StubAVCapturePhotoOutput: PhotoOutputCapturing {
+    private(set) var capturePhotoCalls = 0
+
+    func capturePhoto(with settings: AVCapturePhotoSettings,
+                      delegate: AVCapturePhotoCaptureDelegate) {
+        capturePhotoCalls += 1
+    }
+}
+
 struct ImmediateCameraTeardownScheduler: CameraTeardownScheduling {
     func schedule(_ block: @escaping () -> Void) {
         block()
@@ -198,38 +223,43 @@ final class CameraCaptureTests: XCTestCase {
         try super.tearDownWithError()
     }
 
-    func testCameraWarmupWaitsOneSecondBeforeCaptureAction() throws {
-        let lifecycle = PhotoSessionLifecycle()
-        XCTAssertTrue(lifecycle.prepare { _ in })
-        var captureActions = 0
-        let warmup = CameraWarmup(scheduler: scheduler, interval: 1)
+    func testAVPhotoSessionStartsSessionAndWaitsOneSecondBeforeRequestingPhoto() throws {
+        let captureSession = StubAVCaptureSession()
+        let photoOutput = StubAVCapturePhotoOutput()
+        let queue = DispatchQueue(label: "CameraCaptureTests.AVPhotoSession")
+        let photoSession = AVPhotoSession(session: captureSession,
+                                          output: photoOutput,
+                                          queue: queue,
+                                          warmupScheduler: scheduler)
 
-        warmup.schedule(lifecycle: lifecycle) {
-            captureActions += 1
-        }
+        photoSession.captureJPEG { _ in }
+        queue.sync {}
 
-        XCTAssertEqual(captureActions, 0)
+        XCTAssertEqual(captureSession.startRunningCalls, 1)
+        XCTAssertEqual(photoOutput.capturePhotoCalls, 0)
         XCTAssertEqual(scheduler.scheduledIntervals, [1])
 
         try XCTUnwrap(scheduler.blocks.first)()
 
-        XCTAssertEqual(captureActions, 1)
+        XCTAssertEqual(photoOutput.capturePhotoCalls, 1)
     }
 
-    func testCameraWarmupSkipsCaptureActionAfterCancellation() throws {
-        let lifecycle = PhotoSessionLifecycle()
-        XCTAssertTrue(lifecycle.prepare { _ in })
-        var captureActions = 0
-        let warmup = CameraWarmup(scheduler: scheduler, interval: 1)
+    func testAVPhotoSessionCancellationDuringWarmupDoesNotRequestPhoto() throws {
+        let captureSession = StubAVCaptureSession()
+        let photoOutput = StubAVCapturePhotoOutput()
+        let queue = DispatchQueue(label: "CameraCaptureTests.AVPhotoSession.cancel")
+        let photoSession = AVPhotoSession(session: captureSession,
+                                          output: photoOutput,
+                                          queue: queue,
+                                          warmupScheduler: scheduler)
 
-        warmup.schedule(lifecycle: lifecycle) {
-            captureActions += 1
-        }
-        lifecycle.cancel()
+        photoSession.captureJPEG { _ in }
+        queue.sync {}
+        photoSession.stop()
 
         try XCTUnwrap(scheduler.blocks.first)()
 
-        XCTAssertEqual(captureActions, 0)
+        XCTAssertEqual(photoOutput.capturePhotoCalls, 0)
     }
 
     func testAuthorizedCaptureWritesReturnedJPEGToUniqueTemporaryURL() throws {
