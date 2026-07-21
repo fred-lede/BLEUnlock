@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 protocol TelegramNotificationHandling {
@@ -18,19 +19,47 @@ protocol FailureNotificationDelivering {
     func deliver(message: String)
 }
 
-final class UserNotificationFailureDelivery: FailureNotificationDelivering {
-    private let notificationCenter: NSUserNotificationCenter
+protocol UserNotificationCenterDelivering {
+    func deliver(_ notification: NSUserNotification)
+}
 
-    init(notificationCenter: NSUserNotificationCenter = .default) {
+extension NSUserNotificationCenter: UserNotificationCenterDelivering {}
+
+protocol MainThreadScheduling {
+    func perform(_ action: @escaping () -> Void)
+}
+
+final class DispatchMainThreadScheduler: MainThreadScheduling {
+    func perform(_ action: @escaping () -> Void) {
+        if Thread.isMainThread {
+            action()
+        } else {
+            DispatchQueue.main.async(execute: action)
+        }
+    }
+}
+
+final class UserNotificationFailureDelivery: FailureNotificationDelivering {
+    private let notificationCenter: UserNotificationCenterDelivering
+    private let scheduler: MainThreadScheduling
+    private let notificationFactory: () -> NSUserNotification
+
+    init(notificationCenter: UserNotificationCenterDelivering = NSUserNotificationCenter.default,
+         scheduler: MainThreadScheduling = DispatchMainThreadScheduler(),
+         notificationFactory: @escaping () -> NSUserNotification = NSUserNotification.init) {
         self.notificationCenter = notificationCenter
+        self.scheduler = scheduler
+        self.notificationFactory = notificationFactory
     }
 
     func deliver(message: String) {
-        let notification = NSUserNotification()
-        notification.title = "BLEUnlock"
-        notification.subtitle = "Telegram notification failed"
-        notification.informativeText = message
-        notificationCenter.deliver(notification)
+        scheduler.perform { [notificationCenter, notificationFactory] in
+            let notification = notificationFactory()
+            notification.title = "BLEUnlock"
+            notification.subtitle = t("telegram_failure_notification_subtitle")
+            notification.informativeText = message
+            notificationCenter.deliver(notification)
+        }
     }
 }
 
@@ -43,10 +72,10 @@ final class TelegramMessageFormatter: TelegramMessageFormatting {
 
         var lines = [
             "\(context.hostName) — \(localizedDescription(for: context.event))",
-            "Time: \(dateFormatter.string(from: context.timestamp))"
+            "\(t("telegram_message_time")): \(dateFormatter.string(from: context.timestamp))"
         ]
         if let rssi = context.rssi {
-            lines.append("RSSI: \(rssi) dBm")
+            lines.append("\(t("telegram_message_rssi")): \(rssi) dBm")
         }
         return lines.joined(separator: "\n")
     }
@@ -130,9 +159,9 @@ private enum TelegramNotificationServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notConfigured:
-            return "Telegram is not configured."
+            return t("telegram_error_not_configured")
         case .settingsUnavailable:
-            return "Telegram settings could not be read."
+            return t("telegram_error_settings_unavailable")
         }
     }
 }
@@ -162,8 +191,17 @@ final class TelegramNotificationService: TelegramNotificationHandling {
     }
 
     func handle(_ context: TelegramEventContext) {
-        guard settings.isEnabled, settings.isEventEnabled(context.event),
-              let credentials = try? settings.credentials() else {
+        guard settings.isEnabled, settings.isEventEnabled(context.event) else {
+            return
+        }
+
+        let credentials: TelegramCredentials
+        do {
+            guard let storedCredentials = try settings.credentials() else { return }
+            credentials = storedCredentials
+        } catch {
+            reporter.report(category: "settings",
+                            message: t("telegram_error_settings_unavailable"))
             return
         }
 
@@ -209,9 +247,10 @@ final class TelegramNotificationService: TelegramNotificationHandling {
             switch captureResult {
             case .failure(let error):
                 reporter.report(category: "camera", message: error.localizedDescription)
+                completion?(.failure(error))
                 self.sendText(credentials: credentials,
                               message: message,
-                              completion: completion)
+                              completion: nil)
             case .success(let photoURL):
                 sender.sendPhoto(credentials: credentials,
                                  photoURL: photoURL,
@@ -220,7 +259,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
                         try removeFile(photoURL)
                     } catch {
                         reporter.report(category: "file",
-                                        message: "The captured photo could not be deleted.")
+                                        message: t("telegram_error_file_cleanup"))
                     }
                     if case .failure(let error) = result {
                         reporter.report(category: "telegram", message: error.localizedDescription)

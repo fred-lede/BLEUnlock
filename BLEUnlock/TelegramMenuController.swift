@@ -19,6 +19,7 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
     let statusItem: NSMenuItem
     let eventItems: [TelegramEvent: NSMenuItem]
     let photoItem: NSMenuItem
+    let privacyItem: NSMenuItem
 
     private let settings: TelegramSettings
     private let service: TelegramNotificationHandling
@@ -65,6 +66,10 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
         photoItem = NSMenuItem(title: t("telegram_take_photo"),
                                action: #selector(togglePhoto(_:)),
                                keyEquivalent: "")
+        privacyItem = NSMenuItem(title: t("telegram_camera_privacy"),
+                                 action: nil,
+                                 keyEquivalent: "")
+        privacyItem.isEnabled = false
         statusItem = NSMenuItem(title: t("telegram_status_not_configured"),
                                 action: nil,
                                 keyEquivalent: "")
@@ -86,6 +91,7 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(eventsItem)
         menu.addItem(photoItem)
+        menu.addItem(privacyItem)
         menu.addItem(.separator())
         menu.addItem(statusItem)
     }
@@ -130,30 +136,28 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
     }
 
     @objc internal func configure() {
-        let existingCredentials: TelegramCredentials?
+        let configured: Bool
         do {
-            existingCredentials = try settings.credentials()
+            configured = try settings.isConfigured()
         } catch {
             dialogs.showResult(title: t("telegram_configure"),
-                               message: error.localizedDescription)
+                               message: t("telegram_error_settings_unavailable"))
             return
         }
 
-        dialogs.requestCredentials(hasStoredToken: existingCredentials != nil) { input in
+        dialogs.requestCredentials(hasStoredToken: configured) { input in
             guard let input = input else { return }
-            let replacement = input.replacementToken?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let token = replacement.flatMap({ $0.isEmpty ? nil : $0 })
-                    ?? existingCredentials?.token else {
-                self.dialogs.showResult(
-                    title: t("telegram_configure"),
-                    message: t("telegram_error_not_configured")
-                )
-                return
-            }
 
             do {
-                try self.settings.saveCredentials(token: token, chatID: input.chatID)
+                try self.settings.saveCredentials(replacementToken: input.replacementToken,
+                                                  chatID: input.chatID)
+                guard try self.settings.isConfigured() else {
+                    self.dialogs.showResult(
+                        title: t("telegram_configure"),
+                        message: t("telegram_error_not_configured")
+                    )
+                    return
+                }
                 self.menuWillOpen(self.menu)
             } catch {
                 self.dialogs.showResult(title: t("telegram_configure"),
@@ -207,6 +211,8 @@ final class AppKitTelegramDialogPresenter: TelegramDialogPresenting {
 
         let explanation = NSTextField(wrappingLabelWithString: t("telegram_setup_help"))
         explanation.preferredMaxLayoutWidth = 360
+        let privacy = NSTextField(wrappingLabelWithString: t("telegram_camera_privacy"))
+        privacy.preferredMaxLayoutWidth = 360
 
         let tokenLabel = NSTextField(labelWithString: t("telegram_bot_token"))
         let tokenField = NSSecureTextField()
@@ -217,6 +223,7 @@ final class AppKitTelegramDialogPresenter: TelegramDialogPresenting {
         let chatIDField = NSTextField()
 
         let stack = NSStackView(views: [explanation,
+                                        privacy,
                                         tokenLabel,
                                         tokenField,
                                         chatIDLabel,
@@ -225,7 +232,7 @@ final class AppKitTelegramDialogPresenter: TelegramDialogPresenting {
         stack.alignment = .leading
         stack.spacing = 8
         stack.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
-        stack.frame = NSRect(x: 0, y: 0, width: 360, height: 132)
+        stack.frame = NSRect(x: 0, y: 0, width: 360, height: 190)
         tokenField.widthAnchor.constraint(equalToConstant: 360).isActive = true
         chatIDField.widthAnchor.constraint(equalToConstant: 360).isActive = true
         alert.accessoryView = stack

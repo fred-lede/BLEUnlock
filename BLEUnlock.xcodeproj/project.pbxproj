@@ -24,6 +24,7 @@
 		7E1000303000000000000001 /* TelegramMenuControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002F3000000000000001 /* TelegramMenuControllerTests.swift */; };
 		7E1000323000000000000001 /* TelegramMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000313000000000000001 /* TelegramMenuController.swift */; };
 		7E1000333000000000000001 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000343000000000000001 /* LocalizationTests.swift */; };
+		7E1000353000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7E1000363000000000000001 /* InfoPlist.strings */; };
 		7E1000033000000000000001 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E1000133000000000000001 /* XCTest.framework */; };
 		3D2CF85B255102B300157996 /* MediaRemote.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D2CF85A255102B300157996 /* MediaRemote.framework */; };
 		3D2FCF08226C99CB007A06E7 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3D2FCF07226C99CB007A06E7 /* Images.xcassets */; };
@@ -86,6 +87,14 @@
 		7E10002F3000000000000001 /* TelegramMenuControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramMenuControllerTests.swift; sourceTree = "<group>"; };
 		7E1000313000000000000001 /* TelegramMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramMenuController.swift; sourceTree = "<group>"; };
 		7E1000343000000000000001 /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
+		7E1000373000000000000001 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Base; path = Base.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E1000383000000000000001 /* da */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = da; path = da.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E1000393000000000000001 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003A3000000000000001 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003B3000000000000001 /* nb */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nb; path = nb.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003C3000000000000001 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003D3000000000000001 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003E3000000000000001 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		7E1000133000000000000001 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		3D2CF85A255102B300157996 /* MediaRemote.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaRemote.framework; path = ../../../../System/Library/PrivateFrameworks/MediaRemote.framework; sourceTree = "<group>"; };
 		3D2FCF07226C99CB007A06E7 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
@@ -206,6 +215,7 @@
 				3D95379322784D550017D8B9 /* AboutBox.swift */,
 				3D953799227853E20017D8B9 /* AboutBox.xib */,
 				3D600A35226CC1A40068FB7B /* Localizable.strings */,
+				7E1000363000000000000001 /* InfoPlist.strings */,
 				3DD4B665226C1DF200451B7B /* BLE.swift */,
 				3D6070E126DBC68E00EE4E48 /* LEDeviceInfo.swift */,
 				3DD4B653226C1C3200451B7B /* AppDelegate.swift */,
@@ -384,6 +394,7 @@
 			files = (
 				3D2FCF08226C99CB007A06E7 /* Images.xcassets in Resources */,
 				3D600A37226CC1A40068FB7B /* Localizable.strings in Resources */,
+				7E1000353000000000000001 /* InfoPlist.strings in Resources */,
 				3D953797227853E20017D8B9 /* AboutBox.xib in Resources */,
 				3DD4B659226C1C3400451B7B /* MainMenu.xib in Resources */,
 			);
@@ -448,6 +459,21 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		7E1000363000000000000001 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7E1000373000000000000001 /* Base */,
+				7E1000383000000000000001 /* da */,
+				7E1000393000000000000001 /* de */,
+				7E10003A3000000000000001 /* ja */,
+				7E10003B3000000000000001 /* nb */,
+				7E10003C3000000000000001 /* sv */,
+				7E10003D3000000000000001 /* tr */,
+				7E10003E3000000000000001 /* zh-Hans */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
 		3D600A35226CC1A40068FB7B /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (

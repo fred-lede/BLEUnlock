@@ -8,6 +8,18 @@ final class MemorySecretStore: SecretStoring {
     func removeValue(for account: String) throws { values.removeValue(forKey: account) }
 }
 
+final class ThrowingSecretStore: SecretStoring {
+    let error: Error
+
+    init(error: Error) {
+        self.error = error
+    }
+
+    func string(for account: String) throws -> String? { throw error }
+    func set(_ value: String, for account: String) throws { throw error }
+    func removeValue(for account: String) throws { throw error }
+}
+
 final class RecordingHTTPTransport: HTTPTransport {
     var requests: [URLRequest] = []
     var result: Result<(Data, HTTPURLResponse), Error>!

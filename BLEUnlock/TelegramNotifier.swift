@@ -26,17 +26,17 @@ enum TelegramError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .invalidRequest:
-            return "The Telegram request could not be created."
+            return t("telegram_error_invalid_request")
         case .unreadablePhoto:
-            return "The captured photo could not be read."
+            return t("telegram_error_unreadable_photo")
         case .transport:
-            return "Telegram could not be reached."
+            return t("telegram_error_transport")
         case .httpStatus(let code):
-            return "Telegram returned HTTP status \(code)."
+            return String(format: t("telegram_error_http_status"), code)
         case .rejected(let description):
             return description
         case .invalidResponse:
-            return "Telegram returned an invalid response."
+            return t("telegram_error_invalid_response")
         }
     }
 }
@@ -134,7 +134,7 @@ final class TelegramNotifier: TelegramSending {
                 decoded.ok
                     ? completion(.success(()))
                     : completion(.failure(.rejected(
-                        self.sanitized(decoded.description ?? "Telegram rejected the request.",
+                        self.sanitized(decoded.description ?? t("telegram_error_rejected"),
                                        credentials: credentials)
                     )))
             }

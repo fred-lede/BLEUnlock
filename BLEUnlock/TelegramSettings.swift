@@ -48,8 +48,12 @@ final class TelegramSettings {
 
     func isConfigured() throws -> Bool { try credentials() != nil }
 
-    func saveCredentials(token: String, chatID: String) throws {
-        try secrets.set(token.trimmingCharacters(in: .whitespacesAndNewlines), for: Key.token)
+    func saveCredentials(replacementToken: String?, chatID: String) throws {
+        let replacement = replacementToken?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if let replacement = replacement, !replacement.isEmpty {
+            try secrets.set(replacement, for: Key.token)
+        }
         try secrets.set(chatID.trimmingCharacters(in: .whitespacesAndNewlines), for: Key.chatID)
     }
 }
