@@ -204,6 +204,19 @@ final class PhotoSessionLifecycle {
     }
 }
 
+struct CameraWarmup {
+    let scheduler: CameraScheduling
+    let interval: TimeInterval
+
+    @discardableResult
+    func schedule(lifecycle: PhotoSessionLifecycle,
+                  _ action: @escaping () -> Void) -> ScheduledCancellation {
+        scheduler.schedule(after: interval) {
+            _ = lifecycle.performIfActive(action)
+        }
+    }
+}
+
 final class CameraCapture: PhotoCapturing {
     private let authorization: CameraAuthorizationProviding
     private let sessionFactory: () -> Result<PhotoSessionProviding, CameraCaptureError>
@@ -408,12 +421,24 @@ final class DispatchCameraTeardownScheduler: CameraTeardownScheduling {
 final class AVPhotoSession: PhotoSessionProviding {
     private let session: AVCaptureSession
     private let output: AVCapturePhotoOutput
-    private let queue = DispatchQueue(label: "jp.sone.BLEUnlock.camera-capture")
+    private let queue: DispatchQueue
+    private let warmup: CameraWarmup
     private let lifecycle = PhotoSessionLifecycle()
 
-    private init(session: AVCaptureSession, output: AVCapturePhotoOutput) {
+    private init(session: AVCaptureSession,
+                 output: AVCapturePhotoOutput,
+                 queue: DispatchQueue = DispatchQueue(
+                    label: "jp.sone.BLEUnlock.camera-capture"
+                 ),
+                 warmupScheduler: CameraScheduling? = nil,
+                 warmupInterval: TimeInterval = 1) {
         self.session = session
         self.output = output
+        self.queue = queue
+        self.warmup = CameraWarmup(
+            scheduler: warmupScheduler ?? DispatchCameraScheduler(queue: queue),
+            interval: warmupInterval
+        )
     }
 
     static func make() -> Result<PhotoSessionProviding, CameraCaptureError> {
@@ -447,20 +472,22 @@ final class AVPhotoSession: PhotoSessionProviding {
             guard lifecycle.performIfActive({ session.startRunning() }) else {
                 return
             }
-            guard let completion = lifecycle.takePreparedCompletion() else { return }
-            let proxy = AVPhotoCaptureDelegateProxy(completion: completion) { [weak lifecycle] proxy in
-                lifecycle?.didFinishCallback(for: proxy)
-            }
-            guard lifecycle.install(delegate: proxy) else {
-                proxy.abandon()
-                return
-            }
-            guard lifecycle.performIfActive({
-                output.capturePhoto(with: AVCapturePhotoSettings(), delegate: proxy)
-            }) else {
-                proxy.abandon()
-                lifecycle.didFinishCallback(for: proxy)
-                return
+            self.warmup.schedule(lifecycle: lifecycle) { [output, lifecycle] in
+                guard let completion = lifecycle.takePreparedCompletion() else { return }
+                let proxy = AVPhotoCaptureDelegateProxy(completion: completion) { [weak lifecycle] proxy in
+                    lifecycle?.didFinishCallback(for: proxy)
+                }
+                guard lifecycle.install(delegate: proxy) else {
+                    proxy.abandon()
+                    return
+                }
+                guard lifecycle.performIfActive({
+                    output.capturePhoto(with: AVCapturePhotoSettings(), delegate: proxy)
+                }) else {
+                    proxy.abandon()
+                    lifecycle.didFinishCallback(for: proxy)
+                    return
+                }
             }
         }
     }
