@@ -184,6 +184,40 @@ final class TelegramNotifierTests: XCTestCase {
         wait(for: [done], timeout: 1)
     }
 
+    func testCancelledPhotoTransportMapsToSanitizedTransportError() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory,
+                                                withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let photoURL = directory.appendingPathComponent("capture.jpg")
+        try Data([0xFF, 0xD8, 0xFF, 0xD9]).write(to: photoURL)
+        let requestURL = "https://api.telegram.org/bottoken-SECRET/sendPhoto"
+        transport.result = .failure(URLError(
+            .cancelled,
+            userInfo: [NSLocalizedDescriptionKey: requestURL]
+        ))
+        let done = expectation(description: "completion")
+
+        notifier.sendPhoto(credentials: .init(token: "token-SECRET", chatID: "987654"),
+                           photoURL: photoURL,
+                           caption: "Door opened") { result in
+            defer { done.fulfill() }
+            guard case .failure(let error) = result else {
+                return XCTFail("Expected failure")
+            }
+            XCTAssertEqual(error, .transport)
+            let errorOutput = "\(String(describing: error)) \(error.localizedDescription)"
+            for secret in ["token-SECRET", "987654", requestURL] {
+                XCTAssertFalse(errorOutput.contains(secret))
+            }
+        }
+
+        wait(for: [done], timeout: 1)
+        XCTAssertEqual(transport.requests.count, 1)
+        XCTAssertEqual(transport.requests.first?.url?.absoluteString, requestURL)
+    }
+
     func testMalformedResponseFails() {
         transport.result = .success((Data(#"{"unexpected":true}"#.utf8), response(status: 200)))
         let done = expectation(description: "completion")

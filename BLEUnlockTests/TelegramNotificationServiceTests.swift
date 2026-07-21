@@ -127,6 +127,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
         XCTAssertEqual(sender.photoCalls.count, 1)
         XCTAssertEqual(sender.textCalls.count, 0)
         XCTAssertEqual(remover.calls, [photoURL])
+        XCTAssertEqual(reporter.categories, ["telegram"])
     }
 
     func testCaptureFailureFallsBackToTextAndReportsFailure() throws {
