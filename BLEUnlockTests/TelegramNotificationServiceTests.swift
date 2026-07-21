@@ -1,0 +1,230 @@
+import Foundation
+import XCTest
+@testable import BLEUnlock
+
+final class TelegramNotificationServiceTests: XCTestCase {
+    private var defaultsSuiteName: String!
+    private var defaults: UserDefaults!
+    private var settings: TelegramSettings!
+    private var sender: RecordingTelegramSender!
+    private var camera: StubPhotoCapturer!
+    private var reporter: RecordingFailureReporter!
+    private var remover: RecordingFileRemover!
+    private var service: TelegramNotificationService!
+    private let photoURL = URL(fileURLWithPath: "/private/tmp/BLEUnlock-test-photo.jpg")
+
+    override func setUp() {
+        super.setUp()
+        defaultsSuiteName = "jp.sone.BLEUnlockTests.TelegramNotificationService.\(UUID())"
+        defaults = UserDefaults(suiteName: defaultsSuiteName)
+        defaults.removePersistentDomain(forName: defaultsSuiteName)
+        settings = TelegramSettings(defaults: defaults, secrets: MemorySecretStore())
+        sender = RecordingTelegramSender()
+        camera = StubPhotoCapturer()
+        reporter = RecordingFailureReporter()
+        remover = RecordingFileRemover()
+        service = TelegramNotificationService(
+            settings: settings,
+            sender: sender,
+            camera: camera,
+            removeFile: remover.remove,
+            reporter: reporter
+        )
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: defaultsSuiteName)
+        defaultsSuiteName = nil
+        defaults = nil
+        settings = nil
+        sender = nil
+        camera = nil
+        reporter = nil
+        remover = nil
+        service = nil
+        super.tearDown()
+    }
+
+    func testDisabledTelegramDoesNothing() throws {
+        try settings.saveCredentials(token: "token", chatID: "chat")
+
+        service.handle(context(event: .intruded))
+
+        assertNoCameraOrNetworkCalls()
+    }
+
+    func testUnconfiguredTelegramDoesNothing() {
+        settings.isEnabled = true
+
+        service.handle(context(event: .intruded))
+
+        assertNoCameraOrNetworkCalls()
+    }
+
+    func testDisabledEventDoesNothing() throws {
+        try configure()
+        settings.setEvent(.intruded, enabled: false)
+
+        service.handle(context(event: .intruded))
+
+        assertNoCameraOrNetworkCalls()
+    }
+
+    func testAwaySendsHostTimeEventAndRSSIAsText() throws {
+        try configure()
+
+        service.handle(context(event: .away, rssi: -47))
+
+        XCTAssertEqual(camera.captureCalls, 0)
+        XCTAssertEqual(sender.photoCalls.count, 0)
+        XCTAssertEqual(sender.textCalls.count, 1)
+        let call = try XCTUnwrap(sender.textCalls.first)
+        XCTAssertEqual(call.credentials, .init(token: "token", chatID: "chat"))
+        let lines = call.text.components(separatedBy: "\n")
+        XCTAssertEqual(lines.count, 3)
+        let eventDescription = NSLocalizedString("telegram_event_away",
+                                                 value: "Device Away",
+                                                 comment: "")
+        XCTAssertEqual(lines[0], "Fred-Mac — \(eventDescription)")
+        XCTAssertTrue(lines[1].hasPrefix("Time: "))
+        XCTAssertEqual(lines[2], "RSSI: -47 dBm")
+    }
+
+    func testIntrudedWithPhotoSendsPhotoAndDeletesFileOnSuccess() throws {
+        try configure()
+        camera.result = .success(photoURL)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(camera.captureCalls, 1)
+        XCTAssertEqual(sender.photoCalls.count, 1)
+        XCTAssertEqual(sender.photoCalls.first?.photoURL, photoURL)
+        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(remover.calls, [photoURL])
+        XCTAssertTrue(reporter.categories.isEmpty)
+    }
+
+    func testIntrudedDeletesPhotoWhenUploadFailsWithoutTextRetry() throws {
+        try configure()
+        camera.result = .success(photoURL)
+        sender.photoResult = .failure(.transport)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(sender.photoCalls.count, 1)
+        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(remover.calls, [photoURL])
+        XCTAssertEqual(reporter.categories, ["telegram"])
+    }
+
+    func testCancelledPhotoUploadDeletesPhotoWithoutTextRetry() throws {
+        try configure()
+        camera.result = .success(photoURL)
+        sender.photoResult = .failure(.transport)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(sender.photoCalls.count, 1)
+        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(remover.calls, [photoURL])
+    }
+
+    func testCaptureFailureFallsBackToTextAndReportsFailure() throws {
+        try configure()
+        camera.result = .failure(.denied)
+
+        service.handle(context(event: .intruded, rssi: -47))
+
+        XCTAssertEqual(sender.photoCalls.count, 0)
+        XCTAssertEqual(sender.textCalls.count, 1)
+        XCTAssertEqual(reporter.categories, ["camera"])
+    }
+
+    func testRequestConstructionFailureDeletesPhoto() throws {
+        try configure()
+        camera.result = .success(photoURL)
+        sender.photoResult = .failure(.invalidRequest)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(sender.photoCalls.count, 1)
+        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(remover.calls, [photoURL])
+        XCTAssertEqual(reporter.categories, ["telegram"])
+    }
+
+    func testTestNotificationUsesPhotoSetting() throws {
+        try settings.saveCredentials(token: "token", chatID: "chat")
+        camera.result = .success(photoURL)
+        var photoResult: Result<Void, Error>?
+
+        service.sendTest(hostName: "Fred-Mac") { photoResult = $0 }
+
+        assertSuccess(photoResult)
+        XCTAssertEqual(camera.captureCalls, 1)
+        XCTAssertEqual(sender.photoCalls.count, 1)
+        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(remover.calls, [photoURL])
+
+        settings.takePhotoOnIntruded = false
+        var textResult: Result<Void, Error>?
+        service.sendTest(hostName: "Fred-Mac") { textResult = $0 }
+
+        assertSuccess(textResult)
+        XCTAssertEqual(camera.captureCalls, 1)
+        XCTAssertEqual(sender.photoCalls.count, 1)
+        XCTAssertEqual(sender.textCalls.count, 1)
+    }
+
+    func testFailureReporterRateLimitsSameFailureForFiveMinutes() {
+        var now = Date(timeIntervalSince1970: 100)
+        let delivery = RecordingFailureNotificationDelivery()
+        let rateLimitedReporter = RateLimitedFailureReporter(
+            now: { now },
+            interval: 300,
+            notificationDelivery: delivery
+        )
+
+        rateLimitedReporter.report(category: "camera", message: "Denied")
+        rateLimitedReporter.report(category: "camera", message: "Denied again")
+        rateLimitedReporter.report(category: "telegram", message: "Offline")
+        now.addTimeInterval(299)
+        rateLimitedReporter.report(category: "camera", message: "Still denied")
+
+        XCTAssertEqual(delivery.messages, ["Denied", "Offline"])
+
+        now.addTimeInterval(1)
+        rateLimitedReporter.report(category: "camera", message: "Denied after interval")
+
+        XCTAssertEqual(delivery.messages, ["Denied", "Offline", "Denied after interval"])
+    }
+
+    private func configure() throws {
+        try settings.saveCredentials(token: "token", chatID: "chat")
+        settings.isEnabled = true
+    }
+
+    private func context(event: TelegramEvent, rssi: Int? = nil) -> TelegramEventContext {
+        .init(event: event,
+              hostName: "Fred-Mac",
+              timestamp: Date(timeIntervalSince1970: 100),
+              rssi: rssi)
+    }
+
+    private func assertNoCameraOrNetworkCalls(file: StaticString = #filePath,
+                                              line: UInt = #line) {
+        XCTAssertEqual(camera.captureCalls, 0, file: file, line: line)
+        XCTAssertEqual(sender.textCalls.count, 0, file: file, line: line)
+        XCTAssertEqual(sender.photoCalls.count, 0, file: file, line: line)
+    }
+
+    private func assertSuccess(_ result: Result<Void, Error>?,
+                               file: StaticString = #filePath,
+                               line: UInt = #line) {
+        guard case .success? = result else {
+            return XCTFail("Expected success, got \(String(describing: result))",
+                           file: file,
+                           line: line)
+        }
+    }
+}

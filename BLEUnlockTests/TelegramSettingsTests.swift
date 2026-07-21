@@ -2,14 +2,24 @@ import XCTest
 @testable import BLEUnlock
 
 final class TelegramSettingsTests: XCTestCase {
+    private var defaultsSuiteName: String!
     private var defaults: UserDefaults!
     private var secrets: MemorySecretStore!
 
     override func setUp() {
         super.setUp()
-        defaults = UserDefaults(suiteName: #file)!
-        defaults.removePersistentDomain(forName: #file)
+        defaultsSuiteName = "jp.sone.BLEUnlockTests.TelegramSettings.\(UUID())"
+        defaults = UserDefaults(suiteName: defaultsSuiteName)!
+        defaults.removePersistentDomain(forName: defaultsSuiteName)
         secrets = MemorySecretStore()
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: defaultsSuiteName)
+        defaultsSuiteName = nil
+        defaults = nil
+        secrets = nil
+        super.tearDown()
     }
 
     func testDefaultsAreDisabledWithApprovedEventChoices() throws {
