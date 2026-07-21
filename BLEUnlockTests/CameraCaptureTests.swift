@@ -198,6 +198,40 @@ final class CameraCaptureTests: XCTestCase {
         try super.tearDownWithError()
     }
 
+    func testCameraWarmupWaitsOneSecondBeforeCaptureAction() throws {
+        let lifecycle = PhotoSessionLifecycle()
+        XCTAssertTrue(lifecycle.prepare { _ in })
+        var captureActions = 0
+        let warmup = CameraWarmup(scheduler: scheduler, interval: 1)
+
+        warmup.schedule(lifecycle: lifecycle) {
+            captureActions += 1
+        }
+
+        XCTAssertEqual(captureActions, 0)
+        XCTAssertEqual(scheduler.scheduledIntervals, [1])
+
+        try XCTUnwrap(scheduler.blocks.first)()
+
+        XCTAssertEqual(captureActions, 1)
+    }
+
+    func testCameraWarmupSkipsCaptureActionAfterCancellation() throws {
+        let lifecycle = PhotoSessionLifecycle()
+        XCTAssertTrue(lifecycle.prepare { _ in })
+        var captureActions = 0
+        let warmup = CameraWarmup(scheduler: scheduler, interval: 1)
+
+        warmup.schedule(lifecycle: lifecycle) {
+            captureActions += 1
+        }
+        lifecycle.cancel()
+
+        try XCTUnwrap(scheduler.blocks.first)()
+
+        XCTAssertEqual(captureActions, 0)
+    }
+
     func testAuthorizedCaptureWritesReturnedJPEGToUniqueTemporaryURL() throws {
         let session = StubPhotoSession()
         let jpeg = Data([0xFF, 0xD8, 0xFF, 0xD9])
