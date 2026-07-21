@@ -36,3 +36,25 @@
 "use_screensaver_to_lock" = "用屏保来锁定它";
 "wake_on_proximity" = "靠近唤醒";
 "wake_without_unlocking" = "唤醒时不需解锁";
+
+"telegram" = "Telegram 通知";
+"telegram_enable" = "启用 Telegram";
+"telegram_configure" = "配置…";
+"telegram_test" = "发送测试通知";
+"telegram_events" = "通知事件";
+"telegram_event_away" = "设备已远离";
+"telegram_event_lost" = "信号已丢失";
+"telegram_event_unlocked" = "BLEUnlock 已解锁";
+"telegram_event_intruded" = "已手动解锁";
+"telegram_take_photo" = "手动解锁时附加照片";
+"telegram_status_not_configured" = "未配置";
+"telegram_status_enabled" = "已启用";
+"telegram_status_disabled" = "已禁用";
+"telegram_bot_token" = "机器人令牌";
+"telegram_chat_id" = "聊天 ID";
+"telegram_save" = "保存";
+"telegram_setup_help" = "使用 @BotFather 创建机器人并复制其令牌。向机器人发送一条消息，然后打开 Telegram Bot API 的 getUpdates，复制响应中的数字聊天 ID。";
+"telegram_test_success" = "测试通知已发送。";
+"telegram_test_failed" = "无法发送测试通知。";
+"telegram_camera_privacy" = "照片通知需要摄像头权限。如果拒绝访问，BLEUnlock 将仅发送文本。";
+"telegram_error_not_configured" = "请先配置机器人令牌和聊天 ID。";

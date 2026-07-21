@@ -36,3 +36,25 @@
 "use_screensaver_to_lock" = "Use Screensaver to Lock";
 "wake_on_proximity" = "Wake on Proximity";
 "wake_without_unlocking" = "Wake without Unlocking";
+
+"telegram" = "Telegram Notifications";
+"telegram_enable" = "Enable Telegram";
+"telegram_configure" = "Configure…";
+"telegram_test" = "Send Test Notification";
+"telegram_events" = "Events";
+"telegram_event_away" = "Device is away";
+"telegram_event_lost" = "Signal is lost";
+"telegram_event_unlocked" = "Unlocked by BLEUnlock";
+"telegram_event_intruded" = "Unlocked manually";
+"telegram_take_photo" = "Attach a photo for manual unlock";
+"telegram_status_not_configured" = "Not configured";
+"telegram_status_enabled" = "Enabled";
+"telegram_status_disabled" = "Disabled";
+"telegram_bot_token" = "Bot token";
+"telegram_chat_id" = "Chat ID";
+"telegram_save" = "Save";
+"telegram_setup_help" = "Create a bot with @BotFather and copy its token. Send the bot a message, then open getUpdates in the Telegram Bot API and copy the numeric Chat ID from the response.";
+"telegram_test_success" = "Test notification sent.";
+"telegram_test_failed" = "Could not send the test notification.";
+"telegram_camera_privacy" = "Photo alerts require Camera access. If access is denied, BLEUnlock sends text only.";
+"telegram_error_not_configured" = "Configure a bot token and Chat ID first.";

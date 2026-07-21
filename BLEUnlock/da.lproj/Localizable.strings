@@ -36,3 +36,25 @@
 "use_screensaver_to_lock" = "Brug screensaver til at låse";
 "wake_on_proximity" = "Vågn op på nærhed";
 "wake_without_unlocking" = "Vågn op uden at låse op";
+
+"telegram" = "Telegram-notifikationer";
+"telegram_enable" = "Aktivér Telegram";
+"telegram_configure" = "Konfigurer…";
+"telegram_test" = "Send testnotifikation";
+"telegram_events" = "Hændelser";
+"telegram_event_away" = "Enheden er væk";
+"telegram_event_lost" = "Signalet er mistet";
+"telegram_event_unlocked" = "Låst op af BLEUnlock";
+"telegram_event_intruded" = "Låst op manuelt";
+"telegram_take_photo" = "Vedhæft et foto ved manuel oplåsning";
+"telegram_status_not_configured" = "Ikke konfigureret";
+"telegram_status_enabled" = "Aktiveret";
+"telegram_status_disabled" = "Deaktiveret";
+"telegram_bot_token" = "Bot-token";
+"telegram_chat_id" = "Chat-id";
+"telegram_save" = "Gem";
+"telegram_setup_help" = "Opret en bot med @BotFather, og kopiér dens token. Send botten en besked, åbn derefter getUpdates i Telegram Bot API, og kopiér det numeriske chat-id fra svaret.";
+"telegram_test_success" = "Testnotifikationen blev sendt.";
+"telegram_test_failed" = "Testnotifikationen kunne ikke sendes.";
+"telegram_camera_privacy" = "Fotonotifikationer kræver adgang til kameraet. Hvis adgang afvises, sender BLEUnlock kun tekst.";
+"telegram_error_not_configured" = "Konfigurer først et bot-token og chat-id.";
