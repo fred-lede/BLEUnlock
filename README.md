@@ -59,6 +59,8 @@ Finally, from the menu bar icon, select *Device*.
 It starts scanning nearby BLE devices.
 Select your device, and you're done!
 
+For supported Apple devices, BLEUnlock combines the user-assigned device name with the detected hardware model when both are available, for example `Fred's iPhone (iPhone 16 Pro Max)`. If only a generic name such as `iPhone` or `iPad` is available, BLEUnlock displays the detected model instead.
+
 ## Options
 
 Option | Description
@@ -202,6 +204,18 @@ do shell script "/usr/local/bin/ffmpeg -f avfoundation -r 30 -i 0 -frames:v 1 -y
 
 This app is required because BLEUnlock does not have Camera permission.
 Giving permission to this app resolves the problem.
+
+## Building from source
+
+Open `BLEUnlock.xcodeproj` in Xcode and build the `BLEUnlock` scheme. Release builds are written directly to:
+
+```
+build/Release/BLEUnlock.app
+```
+
+Debug builds are written to `build/Debug/BLEUnlock.app`. Intermediate build data remains in Xcode's Derived Data directory, while the final app is kept under the project's ignored `build/` directory.
+
+The app version and build number are managed by Xcode's `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` settings. The source `Info.plist` references those settings and is not modified during a build, so Xcode's User Script Sandboxing can remain enabled.
 
 ## Funding
 

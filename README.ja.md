@@ -52,6 +52,8 @@ Bluetooth | 当然ながら、Bluetoothへのアクセスが必要です。
 
 最後に、メニューバーアイコンから*デバイス*を選択してください。近くにあるBLEデバイスのスキャンが始まります。使いたいデバイスを選べば完了です。
 
+対応するApple製デバイスでは、ユーザーが設定した名前とハードウェアモデルの両方を取得できた場合、`FredのiPhone (iPhone 16 Pro Max)` のように組み合わせて表示します。`iPhone` や `iPad` のような一般的な名前しか取得できない場合は、検出したモデル名を表示します。
+
 ## オプション
 
 ### 今すぐロック
@@ -225,6 +227,18 @@ do shell script "/usr/local/bin/ffmpeg -f avfoundation -r 30 -i 0 -frames:v 1 -y
 ```
 
 このappはBLEUnlockにカメラのパーミッションがないため必要となります。このappにパーミッションを与えることによりパーミッションの問題を回避できます。
+
+## ソースからビルド
+
+Xcodeで `BLEUnlock.xcodeproj` を開き、`BLEUnlock` スキームをビルドしてください。Releaseビルドは次の場所に直接出力されます。
+
+```
+build/Release/BLEUnlock.app
+```
+
+Debugビルドは `build/Debug/BLEUnlock.app` に出力されます。中間生成物はXcodeのDerived Dataに保存され、完成したappのみがGit管理対象外の `build/` ディレクトリに出力されます。
+
+アプリのバージョンとビルド番号は、Xcodeの `MARKETING_VERSION` と `CURRENT_PROJECT_VERSION` で管理します。`Info.plist` はこれらの設定を参照し、ビルド中に書き換えられないため、User Script Sandboxingを有効にしたままビルドできます。
 
 ## FUNDING
 

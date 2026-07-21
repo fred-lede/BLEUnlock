@@ -36,6 +36,17 @@ class Device: NSObject {
     var scanTimer: Timer?
     var macAddr: String?
     var blName: String?
+    var advertisedName: String?
+
+    private func usableName(_ name: String?) -> String? {
+        guard let name = name else { return nil }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters))
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func isGenericAppleName(_ name: String) -> Bool {
+        return name == "iPhone" || name == "iPad"
+    }
     
     override var description: String {
         get {
@@ -52,26 +63,24 @@ class Device: NSObject {
                 if blName == nil {
                     blName = getNameFromMAC(mac)
                 }
-                if let name = blName {
-                    // If it's just "iPhone" or "iPad", there's a chance we can get the model name in the following code
-                    if name != "iPhone" && name != "iPad" {
-                        return name
-                    }
+            }
+            let friendlyName = usableName(advertisedName) ?? usableName(blName) ?? usableName(peripheral?.name)
+            if let mod = usableName(model), let modelName = appleDeviceNames[mod] {
+                if let name = friendlyName,
+                   !isGenericAppleName(name),
+                   name.caseInsensitiveCompare(modelName) != .orderedSame {
+                    return "\(name) (\(modelName))"
                 }
+                return modelName
+            }
+            if let name = friendlyName, !isGenericAppleName(name) {
+                return name
             }
             if let manu = manufacture {
                 if let mod = model {
-                    if manu == "Apple Inc." && appleDeviceNames[mod] != nil {
-                        return appleDeviceNames[mod]!
-                    }
                     return String(format: "%@/%@", manu, mod)
                 } else {
                     return manu
-                }
-            }
-            if let name = peripheral?.name {
-                if name.trimmingCharacters(in: .whitespaces).count != 0 {
-                    return name
                 }
             }
             if let mod = model {
@@ -91,7 +100,7 @@ class Device: NSObject {
                     }
                 }
             }
-            if let name = blName {
+            if let name = friendlyName {
                 return name
             }
             if let mac = macAddr {
@@ -321,7 +330,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         }
 
         if (scanMode) {
-            if let uuids = advertisementData["kCBAdvDataServiceUUIDs"] as? [CBUUID] {
+            if let uuids = advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID] {
                 for uuid in uuids {
                     if uuid == ExposureNotification {
                         //print("Device \(peripheral.identifier) Exposure Notification")
@@ -336,14 +345,22 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                 if (rssi >= thresholdRSSI) {
                     device.peripheral = peripheral
                     device.rssi = rssi
-                    device.advData = advertisementData["kCBAdvDataManufacturerData"] as? Data
+                    device.advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
+                    device.advData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
                     devices[peripheral.identifier] = device
                     central.connect(peripheral, options: nil)
                     delegate?.newDevice(device: device)
                 }
             } else {
                 device = dev!
+                device.peripheral = peripheral
                 device.rssi = rssi
+                if let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as? String {
+                    device.advertisedName = advertisedName
+                }
+                if let advData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data {
+                    device.advData = advData
+                }
                 delegate?.updateDevice(device: device)
             }
             resetScanTimer(device: device)
@@ -427,8 +444,8 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                     error: Error?)
     {
         if let value = characteristic.value {
-            let str: String? = String(data: value, encoding: .utf8)
-            if let s = str {
+            let str = String(data: value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines.union(.controlCharacters))
+            if let s = str, !s.isEmpty {
                 if let device = devices[peripheral.identifier] {
                     if characteristic.uuid == ManufacturerName {
                         device.manufacture = s
@@ -438,7 +455,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                         device.model = s
                         delegate?.updateDevice(device: device)
                     }
-                    if device.model != nil && device.model != nil && device.peripheral != monitoredPeripheral {
+                    if device.manufacture != nil && device.model != nil && device.peripheral != monitoredPeripheral {
                         centralMgr.cancelPeripheralConnection(peripheral)
                     }
                 }
