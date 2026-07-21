@@ -24,7 +24,9 @@ final class LocalizationTests: XCTestCase {
         "telegram_message_time", "telegram_message_rssi"
     ]
 
-    private let localizationDirectories = ["Base", "da", "de", "ja", "nb", "sv", "tr", "zh-Hans"]
+    private let localizationDirectories = [
+        "Base", "da", "de", "ja", "nb", "sv", "tr", "zh-Hans", "zh-Hant"
+    ]
     private let concreteTelegramEventKeys: Set<String> = [
         "telegram_event_away", "telegram_event_lost",
         "telegram_event_unlocked", "telegram_event_intruded"
