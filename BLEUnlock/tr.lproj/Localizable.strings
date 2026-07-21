@@ -36,3 +36,25 @@
 "use_screensaver_to_lock" = "Kilit ekranı için ekran kuruyucu kullan";
 "wake_on_proximity" = "Uyandırma yakınlığı";
 "wake_without_unlocking" = "Kilidi açmadan uyanın";
+
+"telegram" = "Telegram Bildirimleri";
+"telegram_enable" = "Telegram'ı Etkinleştir";
+"telegram_configure" = "Yapılandır…";
+"telegram_test" = "Test Bildirimi Gönder";
+"telegram_events" = "Olaylar";
+"telegram_event_away" = "Cihaz uzakta";
+"telegram_event_lost" = "Sinyal kayboldu";
+"telegram_event_unlocked" = "BLEUnlock tarafından kilit açıldı";
+"telegram_event_intruded" = "Elle kilit açıldı";
+"telegram_take_photo" = "Elle kilit açıldığında fotoğraf ekle";
+"telegram_status_not_configured" = "Yapılandırılmadı";
+"telegram_status_enabled" = "Etkin";
+"telegram_status_disabled" = "Devre dışı";
+"telegram_bot_token" = "Bot jetonu";
+"telegram_chat_id" = "Sohbet kimliği";
+"telegram_save" = "Kaydet";
+"telegram_setup_help" = "@BotFather ile bir bot oluşturun ve jetonunu kopyalayın. Bota bir mesaj gönderin, ardından Telegram Bot API'deki getUpdates'ı açın ve yanıttaki sayısal sohbet kimliğini kopyalayın.";
+"telegram_test_success" = "Test bildirimi gönderildi.";
+"telegram_test_failed" = "Test bildirimi gönderilemedi.";
+"telegram_camera_privacy" = "Fotoğraflı bildirimler Kamera erişimi gerektirir. Erişim reddedilirse BLEUnlock yalnızca metin gönderir.";
+"telegram_error_not_configured" = "Önce bot jetonunu ve sohbet kimliğini yapılandırın.";
