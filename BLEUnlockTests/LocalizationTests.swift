@@ -53,6 +53,20 @@ final class LocalizationTests: XCTestCase {
         }
     }
 
+    func testEveryNonBaseLocalizationContainsAllAboutBoxTitles() throws {
+        let expectedKeys: Set<String> = [
+            "VLW-23-BX0.title", "WIg-Gy-UeI.title",
+            "fPY-L3-Edh.title", "hgX-Z1-8qq.title"
+        ]
+
+        for name in localizationDirectories where name != "Base" {
+            let url = repository.appendingPathComponent("BLEUnlock/\(name).lproj/AboutBox.strings")
+            let values = try strings(at: url)
+            XCTAssertTrue(expectedKeys.subtracting(values.keys).isEmpty,
+                          "Missing AboutBox keys in \(name)")
+        }
+    }
+
     func testCameraPrivacyTextStatesTheCompleteDataFlow() throws {
         let values = try strings(at: repository.appendingPathComponent(
             "BLEUnlock/Base.lproj/Localizable.strings"

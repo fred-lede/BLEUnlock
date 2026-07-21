@@ -1,0 +1,11 @@
+/* Class = "NSTextFieldCell"; title = "BLEUnlock version #{version}"; ObjectID = "VLW-23-BX0"; */
+"VLW-23-BX0.title" = "BLEUnlock 版本 #{version}";
+
+/* Class = "NSButtonCell"; title = "Check Releases"; ObjectID = "WIg-Gy-UeI"; */
+"WIg-Gy-UeI.title" = "檢查新版本";
+
+/* Class = "NSButtonCell"; title = "Visit Homepage"; ObjectID = "fPY-L3-Edh"; */
+"fPY-L3-Edh.title" = "造訪首頁";
+
+/* Class = "NSWindow"; title = "About BLEUnlock"; ObjectID = "hgX-Z1-8qq"; */
+"hgX-Z1-8qq.title" = "關於 BLEUnlock";
