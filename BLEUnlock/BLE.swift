@@ -124,6 +124,25 @@ protocol BLEDelegate {
     func bluetoothPowerWarn()
 }
 
+protocol BLEScanning: AnyObject {
+    var isScanning: Bool { get }
+    func stopScan()
+    func scanForPeripherals(withServices serviceUUIDs: [CBUUID]?,
+                            options: [String: Any]?)
+}
+
+extension CBCentralManager: BLEScanning {}
+
+func restartBLEScan(using scanner: BLEScanning) {
+    if scanner.isScanning {
+        scanner.stopScan()
+    }
+    scanner.scanForPeripherals(
+        withServices: nil,
+        options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
+    )
+}
+
 class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     let UNLOCK_DISABLED = 1
     let LOCK_DISABLED = -100
@@ -157,7 +176,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
 
     func startScanning() {
         scanMode = true
-        scanForPeripherals()
+        restartBLEScan(using: centralMgr)
     }
 
     func stopScanning() {
