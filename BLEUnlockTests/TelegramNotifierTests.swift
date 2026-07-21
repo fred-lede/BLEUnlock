@@ -35,6 +35,24 @@ final class TelegramNotifierTests: XCTestCase {
         XCTAssertTrue(body.contains("text=Fred%20%26%20Mac"))
     }
 
+    func testSendTextPercentEncodesLiteralPlusForFormBody() throws {
+        transport.result = .success((Data(#"{"ok":true}"#.utf8), response(status: 200)))
+        let done = expectation(description: "completion")
+
+        notifier.sendText(credentials: .init(token: "token-SECRET", chatID: "987654"),
+                          text: "A+B") { result in
+            guard case .success = result else {
+                return XCTFail("Expected success, got \(result)")
+            }
+            done.fulfill()
+        }
+
+        wait(for: [done], timeout: 1)
+        let request = try XCTUnwrap(transport.requests.first)
+        let body = String(decoding: try XCTUnwrap(request.httpBody), as: UTF8.self)
+        XCTAssertTrue(body.contains("text=A%2BB"))
+    }
+
     func testSendPhotoBuildsMultipartWithJPEGAndCaption() throws {
         let photoBytes = Data([0xFF, 0xD8, 0x00, 0x7F, 0xD9])
         let directory = FileManager.default.temporaryDirectory
@@ -79,6 +97,31 @@ final class TelegramNotifierTests: XCTestCase {
         XCTAssertEqual(request.httpBody, expectedBody)
     }
 
+    func testSendPhotoInvalidCredentialsReturnInvalidRequest() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory,
+                                                withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let photoURL = directory.appendingPathComponent("capture.jpg")
+        try Data([0xFF, 0xD8, 0xFF, 0xD9]).write(to: photoURL)
+        transport.result = .success((Data(#"{"ok":true}"#.utf8), response(status: 200)))
+        let done = expectation(description: "completion")
+
+        notifier.sendPhoto(credentials: .init(token: "", chatID: "987654"),
+                           photoURL: photoURL,
+                           caption: "Door opened") { result in
+            defer { done.fulfill() }
+            guard case .failure(let error) = result else {
+                return XCTFail("Expected failure")
+            }
+            XCTAssertEqual(error, .invalidRequest)
+        }
+
+        wait(for: [done], timeout: 1)
+        XCTAssertTrue(transport.requests.isEmpty)
+    }
+
     func testTelegramOKFalseReturnsSanitizedDescription() {
         transport.result = .success((Data(#"{"ok":false,"description":"Forbidden"}"#.utf8),
                                      response(status: 200)))
@@ -92,6 +135,29 @@ final class TelegramNotifierTests: XCTestCase {
             XCTAssertEqual(error, .rejected("Forbidden"))
             self.assertSanitized(error)
             done.fulfill()
+        }
+
+        wait(for: [done], timeout: 1)
+    }
+
+    func testTelegramOKFalseRedactsCredentialsFromDescription() {
+        let serverDescription = "Forbidden token-SECRET chat 987654 path /bottoken-SECRET/"
+        let payload = #"{"ok":false,"description":"\#(serverDescription)"}"#
+        transport.result = .success((Data(payload.utf8), response(status: 200)))
+        let done = expectation(description: "completion")
+
+        notifier.sendText(credentials: .init(token: "token-SECRET", chatID: "987654"),
+                          text: "x") { result in
+            defer { done.fulfill() }
+            guard case .failure(let error) = result,
+                  case .rejected(let description) = error else {
+                return XCTFail("Expected rejected failure")
+            }
+            XCTAssertTrue(description.contains("Forbidden"))
+            for secret in ["token-SECRET", "987654", "/bottoken-SECRET/"] {
+                XCTAssertFalse(description.contains(secret))
+                XCTAssertFalse(String(describing: error).contains(secret))
+            }
         }
 
         wait(for: [done], timeout: 1)

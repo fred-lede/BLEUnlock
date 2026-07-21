@@ -55,45 +55,48 @@ final class TelegramNotifier: TelegramSending {
             completion(.failure(.invalidRequest))
             return
         }
-        perform(request, completion: completion)
+        perform(request, credentials: credentials, completion: completion)
     }
 
     func sendPhoto(credentials: TelegramCredentials,
                    photoURL: URL,
                    caption: String,
                    completion: @escaping (Result<Void, TelegramError>) -> Void) {
-        guard let request = try? makePhotoRequest(credentials: credentials,
-                                                  photoURL: photoURL,
-                                                  caption: caption) else {
+        guard let url = endpointURL(token: credentials.token, method: "sendPhoto") else {
+            completion(.failure(.invalidRequest))
+            return
+        }
+        guard let data = try? Data(contentsOf: photoURL) else {
             completion(.failure(.unreadablePhoto))
             return
         }
-        perform(request, completion: completion)
+        let request = makePhotoRequest(credentials: credentials,
+                                       url: url,
+                                       photoURL: photoURL,
+                                       caption: caption,
+                                       data: data)
+        perform(request, credentials: credentials, completion: completion)
     }
 
     private func makeTextRequest(credentials: TelegramCredentials, text: String) -> URLRequest? {
-        guard let url = URL(string: "https://api.telegram.org/bot\(credentials.token)/sendMessage") else {
+        guard let url = endpointURL(token: credentials.token, method: "sendMessage") else {
             return nil
         }
-        var components = URLComponents()
-        components.queryItems = [
-            URLQueryItem(name: "chat_id", value: credentials.chatID),
-            URLQueryItem(name: "text", value: text)
-        ]
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.httpBody = components.percentEncodedQuery?.data(using: .utf8)
+        request.httpBody = formEncoded([
+            ("chat_id", credentials.chatID),
+            ("text", text)
+        ])
         return request
     }
 
     private func makePhotoRequest(credentials: TelegramCredentials,
+                                  url: URL,
                                   photoURL: URL,
-                                  caption: String) throws -> URLRequest {
-        let data = try Data(contentsOf: photoURL)
-        guard let url = URL(string: "https://api.telegram.org/bot\(credentials.token)/sendPhoto") else {
-            throw TelegramError.invalidRequest
-        }
+                                  caption: String,
+                                  data: Data) -> URLRequest {
         let boundary = "BLEUnlock-\(UUID().uuidString)"
         var body = Data()
         body.appendMultipartField(name: "chat_id", value: credentials.chatID, boundary: boundary)
@@ -113,6 +116,7 @@ final class TelegramNotifier: TelegramSending {
     }
 
     private func perform(_ request: URLRequest,
+                         credentials: TelegramCredentials,
                          completion: @escaping (Result<Void, TelegramError>) -> Void) {
         transport.perform(request) { result in
             switch result {
@@ -130,9 +134,41 @@ final class TelegramNotifier: TelegramSending {
                 decoded.ok
                     ? completion(.success(()))
                     : completion(.failure(.rejected(
-                        decoded.description ?? "Telegram rejected the request."
+                        self.sanitized(decoded.description ?? "Telegram rejected the request.",
+                                       credentials: credentials)
                     )))
             }
+        }
+    }
+
+    private func endpointURL(token: String, method: String) -> URL? {
+        guard !token.isEmpty else { return nil }
+        return URL(string: "https://api.telegram.org/bot\(token)/\(method)")
+    }
+
+    private func formEncoded(_ fields: [(String, String)]) -> Data {
+        let body = fields
+            .map { "\(formPercentEncoded($0.0))=\(formPercentEncoded($0.1))" }
+            .joined(separator: "&")
+        return Data(body.utf8)
+    }
+
+    private func formPercentEncoded(_ value: String) -> String {
+        value.utf8.map { byte in
+            switch byte {
+            case 0x41...0x5A, 0x61...0x7A, 0x30...0x39, 0x2D, 0x2E, 0x5F, 0x7E:
+                return String(UnicodeScalar(byte))
+            default:
+                return String(format: "%%%02X", byte)
+            }
+        }.joined()
+    }
+
+    private func sanitized(_ description: String,
+                           credentials: TelegramCredentials) -> String {
+        [credentials.token, credentials.chatID].reduce(description) { result, credential in
+            guard !credential.isEmpty else { return result }
+            return result.replacingOccurrences(of: credential, with: "[redacted]")
         }
     }
 }
