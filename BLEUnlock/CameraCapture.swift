@@ -64,9 +64,20 @@ protocol AbandonablePhotoCaptureDelegate: AnyObject {
 
 final class PhotoSessionLifecycle {
     private let stateLock = NSLock()
+    private let retirementScheduler: CameraScheduling
+    private let retirementTimeout: TimeInterval
     private var cancelled = false
     private var pendingCompletion: ((Result<Data, CameraCaptureError>) -> Void)?
     private var activeDelegates: [ObjectIdentifier: AbandonablePhotoCaptureDelegate] = [:]
+    private var retiredDelegates: [ObjectIdentifier: AbandonablePhotoCaptureDelegate] = [:]
+    private var retirementCancellation: ScheduledCancellation?
+    private var retirementGeneration = 0
+
+    init(retirementScheduler: CameraScheduling = DispatchCameraScheduler(),
+         retirementTimeout: TimeInterval = 30) {
+        self.retirementScheduler = retirementScheduler
+        self.retirementTimeout = retirementTimeout
+    }
 
     func prepare(completion: @escaping (Result<Data, CameraCaptureError>) -> Void) -> Bool {
         stateLock.lock()
@@ -88,7 +99,9 @@ final class PhotoSessionLifecycle {
     func install(delegate: AbandonablePhotoCaptureDelegate) -> Bool {
         stateLock.lock()
         defer { stateLock.unlock() }
-        guard !cancelled else { return false }
+        guard !cancelled,
+              activeDelegates.isEmpty,
+              retiredDelegates.isEmpty else { return false }
         activeDelegates[ObjectIdentifier(delegate)] = delegate
         return true
     }
@@ -113,17 +126,81 @@ final class PhotoSessionLifecycle {
         cancelled = true
         pendingCompletion = nil
         let delegates = Array(activeDelegates.values)
+        retiredDelegates = activeDelegates
         activeDelegates.removeAll()
+        retirementGeneration += 1
+        let generation = retirementGeneration
+        let shouldScheduleRetirement = !retiredDelegates.isEmpty
         stateLock.unlock()
 
         delegates.forEach { $0.abandon() }
+        if shouldScheduleRetirement {
+            scheduleRetiredDelegateRelease(generation: generation)
+        }
     }
 
     func didFinishCallback(for delegate: AbandonablePhotoCaptureDelegate) {
         stateLock.lock()
         let identifier = ObjectIdentifier(delegate)
         activeDelegates[identifier] = nil
+        retiredDelegates[identifier] = nil
+        let cancellation: ScheduledCancellation?
+        if retiredDelegates.isEmpty {
+            retirementGeneration += 1
+            cancellation = retirementCancellation
+            retirementCancellation = nil
+        } else {
+            cancellation = nil
+        }
         stateLock.unlock()
+        cancellation?.cancel()
+    }
+
+    func teardownDidFinish() {
+        releaseAllRetiredDelegates()
+    }
+
+    private func scheduleRetiredDelegateRelease(generation: Int) {
+        let cancellation = retirementScheduler.schedule(after: retirementTimeout) { [weak self] in
+            self?.releaseRetiredDelegates(generation: generation)
+        }
+
+        stateLock.lock()
+        let shouldKeepCancellation = retirementGeneration == generation
+            && !retiredDelegates.isEmpty
+            && retirementCancellation == nil
+        if shouldKeepCancellation {
+            retirementCancellation = cancellation
+        }
+        stateLock.unlock()
+
+        if !shouldKeepCancellation {
+            cancellation.cancel()
+        }
+    }
+
+    private func releaseRetiredDelegates(generation: Int) {
+        stateLock.lock()
+        guard retirementGeneration == generation else {
+            stateLock.unlock()
+            return
+        }
+        retiredDelegates.removeAll()
+        retirementGeneration += 1
+        let cancellation = retirementCancellation
+        retirementCancellation = nil
+        stateLock.unlock()
+        cancellation?.cancel()
+    }
+
+    private func releaseAllRetiredDelegates() {
+        stateLock.lock()
+        retiredDelegates.removeAll()
+        retirementGeneration += 1
+        let cancellation = retirementCancellation
+        retirementCancellation = nil
+        stateLock.unlock()
+        cancellation?.cancel()
     }
 }
 
@@ -390,7 +467,8 @@ final class AVPhotoSession: PhotoSessionProviding {
 
     func stop() {
         lifecycle.cancel()
-        queue.async { [session] in
+        queue.async { [session, lifecycle] in
+            defer { lifecycle.teardownDidFinish() }
             if session.isRunning {
                 session.stopRunning()
             }
