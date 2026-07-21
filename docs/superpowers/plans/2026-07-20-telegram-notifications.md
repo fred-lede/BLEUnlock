@@ -11,6 +11,7 @@
 ## Global Constraints
 
 - Preserve `~/Library/Application Scripts/jp.sone.BLEUnlock/event` and its existing arguments unchanged.
+- Raise the BLEUnlock application deployment target from macOS 10.13 to macOS 11.0; the user explicitly approved dropping 10.13/10.14 compatibility.
 - Telegram starts disabled for existing and new users.
 - Event defaults are `away=true`, `lost=true`, `unlocked=false`, and `intruded=true`.
 - `Take Photo on Manual Unlock` defaults to true and applies only to `intruded` plus the explicit test-notification action.
@@ -74,6 +75,8 @@ SWIFT_VERSION = 5.0
 TEST_HOST = $(BUILT_PRODUCTS_DIR)/BLEUnlock.app/Contents/MacOS/BLEUnlock
 BUNDLE_LOADER = $(TEST_HOST)
 ```
+
+In the same project-file change, set `MACOSX_DEPLOYMENT_TARGET = 11.0` for the BLEUnlock application in both Debug and Release so production and tests share the approved minimum version. Confirm Launcher remains at 11.0.
 
 Add it to the shared scheme's Test action. Merge these entries into the current project and scheme files; do not regenerate either file.
 
