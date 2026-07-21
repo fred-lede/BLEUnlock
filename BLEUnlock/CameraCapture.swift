@@ -54,6 +54,69 @@ protocol CameraScheduling {
                   _ block: @escaping () -> Void) -> ScheduledCancellation
 }
 
+protocol AbandonablePhotoCaptureDelegate: AnyObject {
+    func abandon()
+}
+
+final class PhotoSessionLifecycle {
+    private let stateLock = NSLock()
+    private let actionGate = NSRecursiveLock()
+    private var cancelled = false
+    private var activeDelegates: [ObjectIdentifier: AbandonablePhotoCaptureDelegate] = [:]
+    private var abandonedDelegates: [ObjectIdentifier: AbandonablePhotoCaptureDelegate] = [:]
+
+    func install(delegate: AbandonablePhotoCaptureDelegate) -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        guard !cancelled else { return false }
+        activeDelegates[ObjectIdentifier(delegate)] = delegate
+        return true
+    }
+
+    @discardableResult
+    func performIfActive(_ action: () -> Void) -> Bool {
+        actionGate.lock()
+        defer { actionGate.unlock() }
+
+        stateLock.lock()
+        let isActive = !cancelled
+        stateLock.unlock()
+        guard isActive else { return false }
+
+        action()
+        return true
+    }
+
+    func cancel() {
+        stateLock.lock()
+        guard !cancelled else {
+            stateLock.unlock()
+            return
+        }
+        cancelled = true
+        let delegates = Array(activeDelegates.values)
+        for delegate in delegates {
+            let identifier = ObjectIdentifier(delegate)
+            abandonedDelegates[identifier] = delegate
+            activeDelegates[identifier] = nil
+        }
+        stateLock.unlock()
+
+        delegates.forEach { $0.abandon() }
+
+        actionGate.lock()
+        actionGate.unlock()
+    }
+
+    func didFinishCallback(for delegate: AbandonablePhotoCaptureDelegate) {
+        stateLock.lock()
+        let identifier = ObjectIdentifier(delegate)
+        activeDelegates[identifier] = nil
+        abandonedDelegates[identifier] = nil
+        stateLock.unlock()
+    }
+}
+
 final class CameraCapture: PhotoCapturing {
     private let authorization: CameraAuthorizationProviding
     private let sessionFactory: () -> Result<PhotoSessionProviding, CameraCaptureError>
@@ -118,6 +181,7 @@ final class CameraCapture: PhotoCapturing {
             }
             didFinish = true
             let cancellation = timeoutCancellation
+            timeoutCancellation = nil
             stateLock.unlock()
 
             cancellation?.cancel()
@@ -145,8 +209,10 @@ final class CameraCapture: PhotoCapturing {
             finish(.failure(.timeout))
         }
         stateLock.lock()
-        timeoutCancellation = cancellation
         let captureAlreadyFinished = didFinish
+        if !captureAlreadyFinished {
+            timeoutCancellation = cancellation
+        }
         stateLock.unlock()
         if captureAlreadyFinished {
             cancellation.cancel()
@@ -165,14 +231,19 @@ final class AVCameraAuthorization: CameraAuthorizationProviding {
 }
 
 private final class DispatchScheduledCancellation: ScheduledCancellation {
-    private let workItem: DispatchWorkItem
+    private let lock = NSLock()
+    private var workItem: DispatchWorkItem?
 
     init(workItem: DispatchWorkItem) {
         self.workItem = workItem
     }
 
     func cancel() {
-        workItem.cancel()
+        lock.lock()
+        let item = workItem
+        workItem = nil
+        lock.unlock()
+        item?.cancel()
     }
 }
 
@@ -196,7 +267,7 @@ final class AVPhotoSession: PhotoSessionProviding {
     private let session: AVCaptureSession
     private let output: AVCapturePhotoOutput
     private let queue = DispatchQueue(label: "jp.sone.BLEUnlock.camera-capture")
-    private var delegateProxy: AVPhotoCaptureDelegateProxy?
+    private let lifecycle = PhotoSessionLifecycle()
 
     private init(session: AVCaptureSession, output: AVCapturePhotoOutput) {
         self.session = session
@@ -230,19 +301,30 @@ final class AVPhotoSession: PhotoSessionProviding {
 
     func captureJPEG(completion: @escaping (Result<Data, CameraCaptureError>) -> Void) {
         queue.async { [self] in
-            let proxy = AVPhotoCaptureDelegateProxy { [weak self] result in
-                completion(result)
-                self?.queue.async {
-                    self?.delegateProxy = nil
-                }
+            let proxy = AVPhotoCaptureDelegateProxy(completion: completion) { [lifecycle] proxy in
+                lifecycle.didFinishCallback(for: proxy)
             }
-            delegateProxy = proxy
-            session.startRunning()
-            output.capturePhoto(with: AVCapturePhotoSettings(), delegate: proxy)
+            guard lifecycle.install(delegate: proxy) else {
+                proxy.abandon()
+                return
+            }
+            guard lifecycle.performIfActive({ session.startRunning() }) else {
+                proxy.abandon()
+                lifecycle.didFinishCallback(for: proxy)
+                return
+            }
+            guard lifecycle.performIfActive({
+                output.capturePhoto(with: AVCapturePhotoSettings(), delegate: proxy)
+            }) else {
+                proxy.abandon()
+                lifecycle.didFinishCallback(for: proxy)
+                return
+            }
         }
     }
 
     func stop() {
+        lifecycle.cancel()
         queue.async { [session] in
             if session.isRunning {
                 session.stopRunning()
@@ -251,13 +333,18 @@ final class AVPhotoSession: PhotoSessionProviding {
     }
 }
 
-private final class AVPhotoCaptureDelegateProxy: NSObject, AVCapturePhotoCaptureDelegate {
+private final class AVPhotoCaptureDelegateProxy: NSObject,
+                                                 AVCapturePhotoCaptureDelegate,
+                                                 AbandonablePhotoCaptureDelegate {
     private let lock = NSLock()
     private var didComplete = false
-    private let completion: (Result<Data, CameraCaptureError>) -> Void
+    private var completion: ((Result<Data, CameraCaptureError>) -> Void)?
+    private let callbackFinished: (AVPhotoCaptureDelegateProxy) -> Void
 
-    init(completion: @escaping (Result<Data, CameraCaptureError>) -> Void) {
+    init(completion: @escaping (Result<Data, CameraCaptureError>) -> Void,
+         callbackFinished: @escaping (AVPhotoCaptureDelegateProxy) -> Void) {
         self.completion = completion
+        self.callbackFinished = callbackFinished
     }
 
     func photoOutput(_ output: AVCapturePhotoOutput,
@@ -281,7 +368,16 @@ private final class AVPhotoCaptureDelegateProxy: NSObject, AVCapturePhotoCapture
             return
         }
         didComplete = true
+        let completion = self.completion
+        self.completion = nil
         lock.unlock()
-        completion(result)
+        completion?(result)
+        callbackFinished(self)
+    }
+
+    func abandon() {
+        lock.lock()
+        completion = nil
+        lock.unlock()
     }
 }
