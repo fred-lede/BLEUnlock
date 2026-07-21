@@ -119,6 +119,40 @@ final class BlockingStopPhotoSession: PhotoSessionProviding {
     }
 }
 
+final class LifecycleBackedPhotoSession: PhotoSessionProviding {
+    private let lifecycle: PhotoSessionLifecycle
+    private(set) weak var captureDelegate: StubAbandonablePhotoDelegate?
+
+    init(retirementScheduler: CameraScheduling,
+         retirementTimeout: TimeInterval = 30) {
+        lifecycle = PhotoSessionLifecycle(retirementScheduler: retirementScheduler,
+                                          retirementTimeout: retirementTimeout)
+    }
+
+    func captureJPEG(completion: @escaping (Result<Data, CameraCaptureError>) -> Void) {
+        let delegate = StubAbandonablePhotoDelegate()
+        delegate.completion = {
+            completion(.success(Data([0xFF, 0xD8, 0xFF, 0xD9])))
+        }
+        guard lifecycle.install(delegate: delegate) else { return }
+        captureDelegate = delegate
+    }
+
+    func stop() {
+        lifecycle.cancel()
+    }
+
+    func deliverLateCallback() {
+        guard let delegate = captureDelegate else { return }
+        delegate.deliverCallback()
+        lifecycle.didFinishCallback(for: delegate)
+    }
+
+    func finishTeardown() {
+        lifecycle.teardownDidFinish()
+    }
+}
+
 final class LifetimeToken {}
 
 final class WeakBox<Value: AnyObject> {
@@ -412,27 +446,80 @@ final class CameraCaptureTests: XCTestCase {
         XCTAssertEqual(deliveredCompletions, 0)
     }
 
-    func testCancellingLifecycleReleasesAbandonedDelegateWithoutCallback() {
-        let lifecycle = PhotoSessionLifecycle()
-        var deliveredCompletions = 0
-        var completionOwner: LifetimeToken? = LifetimeToken()
-        let weakCompletionOwner = WeakBox(completionOwner)
-        var delegate: StubAbandonablePhotoDelegate? = StubAbandonablePhotoDelegate()
-        let weakDelegate = WeakBox(delegate)
-        delegate?.completion = retainedCompletion(owner: completionOwner!) {
-            deliveredCompletions += 1
+    func testLateCallbackAfterTimeoutRetainsDelegateSuppressesClientAndThenReleases() throws {
+        let retirementScheduler = StubCameraScheduler()
+        let session = LifecycleBackedPhotoSession(retirementScheduler: retirementScheduler)
+        var results: [Result<URL, CameraCaptureError>] = []
+
+        CameraCapture(authorization: StubCameraAuthorization(),
+                      sessionFactory: { .success(session) },
+                      temporaryDirectory: temporaryDirectory,
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture {
+            results.append($0)
         }
+        let weakDelegate = WeakBox(session.captureDelegate)
 
-        XCTAssertTrue(lifecycle.install(delegate: delegate!))
-        completionOwner = nil
-        lifecycle.cancel()
+        try XCTUnwrap(scheduler.blocks.first)()
 
-        XCTAssertEqual(delegate?.abandonCalls, 1)
-        XCTAssertNil(weakCompletionOwner.value)
-        delegate = nil
-        XCTAssertEqual(deliveredCompletions, 0)
+        XCTAssertEqual(results.count, 1)
+        guard case .failure(let error) = results[0] else {
+            return XCTFail("Expected timeout, got \(results[0])")
+        }
+        XCTAssertEqual(error, .timeout)
+        XCTAssertNotNil(weakDelegate.value,
+                        "AVFoundation's in-flight delegate must survive cancellation")
+
+        session.deliverLateCallback()
+
+        XCTAssertEqual(results.count, 1,
+                       "A callback after timeout must not complete the client again")
         XCTAssertNil(weakDelegate.value,
-                     "An abandoned delegate must not be retained forever without a callback")
+                     "The final capture callback is a safe delegate release point")
+        XCTAssertEqual(retirementScheduler.cancellations.first?.cancelCalls, 1)
+    }
+
+    func testNoCallbackReleasesRetiredDelegateAfterTeardownCompletes() throws {
+        let retirementScheduler = StubCameraScheduler()
+        let session = LifecycleBackedPhotoSession(retirementScheduler: retirementScheduler)
+
+        CameraCapture(authorization: StubCameraAuthorization(),
+                      sessionFactory: { .success(session) },
+                      temporaryDirectory: temporaryDirectory,
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture { _ in }
+        let weakDelegate = WeakBox(session.captureDelegate)
+
+        try XCTUnwrap(scheduler.blocks.first)()
+        XCTAssertNotNil(weakDelegate.value)
+
+        session.finishTeardown()
+
+        XCTAssertNil(weakDelegate.value,
+                     "Completed session teardown must release a delegate with no callback")
+        XCTAssertEqual(retirementScheduler.cancellations.first?.cancelCalls, 1)
+    }
+
+    func testBlockedTeardownUsesBoundedFallbackToReleaseRetiredDelegate() throws {
+        let retirementScheduler = StubCameraScheduler()
+        let session = LifecycleBackedPhotoSession(retirementScheduler: retirementScheduler,
+                                                  retirementTimeout: 3)
+
+        CameraCapture(authorization: StubCameraAuthorization(),
+                      sessionFactory: { .success(session) },
+                      temporaryDirectory: temporaryDirectory,
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture { _ in }
+        let weakDelegate = WeakBox(session.captureDelegate)
+
+        try XCTUnwrap(scheduler.blocks.first)()
+        XCTAssertNotNil(weakDelegate.value)
+        XCTAssertEqual(retirementScheduler.scheduledIntervals, [3])
+
+        try XCTUnwrap(retirementScheduler.blocks.first)()
+
+        XCTAssertNil(weakDelegate.value,
+                     "The independent fallback bounds retention if teardown never returns")
     }
 
     func testCancelledLifecycleSkipsQueuedStartAndPhotoCapture() {
@@ -510,14 +597,6 @@ final class CameraCaptureTests: XCTestCase {
 
         wait(for: [released], timeout: 1)
         XCTAssertNil(weakSession.value)
-    }
-
-    private func retainedCompletion(owner: LifetimeToken,
-                                    completion: @escaping () -> Void) -> () -> Void {
-        return {
-            _ = owner
-            completion()
-        }
     }
 
     private func retainedResultCompletion(
