@@ -44,7 +44,7 @@ final class TelegramMenuControllerTests: XCTestCase {
     }
 
     func testConfiguredMenuCanEnableTelegram() throws {
-        try settings.saveCredentials(token: "token", chatID: "chat")
+        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
         controller.menuWillOpen(controller.menu)
 
         XCTAssertTrue(controller.enableItem.isEnabled)
@@ -57,7 +57,7 @@ final class TelegramMenuControllerTests: XCTestCase {
     }
 
     func testEventAndPhotoItemsReflectAndPersistSettings() throws {
-        try settings.saveCredentials(token: "token", chatID: "chat")
+        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
         controller.menuWillOpen(controller.menu)
 
         XCTAssertEqual(controller.eventItems[.away]?.state, .on)
@@ -72,7 +72,7 @@ final class TelegramMenuControllerTests: XCTestCase {
     }
 
     func testConfigureLeavesExistingTokenWhenTokenFieldIsBlank() throws {
-        try settings.saveCredentials(token: "original", chatID: "old-chat")
+        try settings.saveCredentials(replacementToken: "original", chatID: "old-chat")
         dialogs.credentialInput = .init(replacementToken: nil, chatID: "new-chat")
 
         controller.configure()
@@ -84,7 +84,7 @@ final class TelegramMenuControllerTests: XCTestCase {
     }
 
     func testConfigureReplacesTokenWhenNewValueIsEntered() throws {
-        try settings.saveCredentials(token: "original", chatID: "old-chat")
+        try settings.saveCredentials(replacementToken: "original", chatID: "old-chat")
         dialogs.credentialInput = .init(replacementToken: " replacement ",
                                         chatID: "new-chat")
 
@@ -95,7 +95,7 @@ final class TelegramMenuControllerTests: XCTestCase {
     }
 
     func testSendTestCallsServiceAndPresentsResult() throws {
-        try settings.saveCredentials(token: "token", chatID: "chat")
+        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
         let presented = expectation(description: "Result presented")
         dialogs.onShowResult = { presented.fulfill() }
 
@@ -106,6 +106,28 @@ final class TelegramMenuControllerTests: XCTestCase {
         XCTAssertEqual(dialogs.results.count, 1)
         XCTAssertEqual(dialogs.results.first?.title, t("telegram_test_success"))
         XCTAssertTrue(dialogs.showResultWasOnMainThread)
+    }
+
+    func testCameraPrivacyExplanationIsVisibleAdjacentToPhotoToggle() {
+        let photoIndex = controller.menu.index(of: controller.photoItem)
+        let privacyIndex = controller.menu.index(of: controller.privacyItem)
+
+        XCTAssertEqual(privacyIndex, photoIndex + 1)
+        XCTAssertEqual(controller.privacyItem.title, t("telegram_camera_privacy"))
+        XCTAssertFalse(controller.privacyItem.isEnabled)
+    }
+
+    func testControllerDoesNotReadOrRetainTelegramCredentials() throws {
+        let repository = URL(fileURLWithPath: #file)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(contentsOf: repository.appendingPathComponent(
+            "BLEUnlock/TelegramMenuController.swift"
+        ))
+
+        XCTAssertFalse(source.contains("settings.credentials()"))
+        XCTAssertFalse(source.contains("TelegramCredentials"))
+        XCTAssertTrue(source.contains("saveCredentials(replacementToken:"))
     }
 }
 

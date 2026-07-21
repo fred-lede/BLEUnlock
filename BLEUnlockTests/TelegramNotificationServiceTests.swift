@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import XCTest
 @testable import BLEUnlock
@@ -46,7 +47,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
     }
 
     func testDisabledTelegramDoesNothing() throws {
-        try settings.saveCredentials(token: "token", chatID: "chat")
+        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
 
         service.handle(context(event: .intruded))
 
@@ -59,6 +60,30 @@ final class TelegramNotificationServiceTests: XCTestCase {
         service.handle(context(event: .intruded))
 
         assertNoCameraOrNetworkCalls()
+    }
+
+    func testKeychainReadFailureIsReportedWithoutLeakingUnderlyingError() {
+        let secret = "token-SECRET"
+        let failure = NSError(domain: secret,
+                              code: 17,
+                              userInfo: [NSLocalizedDescriptionKey: "Could not read \(secret)"])
+        settings = TelegramSettings(defaults: defaults,
+                                    secrets: ThrowingSecretStore(error: failure))
+        settings.isEnabled = true
+        service = TelegramNotificationService(
+            settings: settings,
+            sender: sender,
+            camera: camera,
+            removeFile: remover.remove,
+            reporter: reporter
+        )
+
+        service.handle(context(event: .intruded))
+
+        assertNoCameraOrNetworkCalls()
+        XCTAssertEqual(reporter.categories, ["settings"])
+        XCTAssertEqual(reporter.messages, [t("telegram_error_settings_unavailable")])
+        XCTAssertFalse(reporter.messages.joined().contains(secret))
     }
 
     func testDisabledEventDoesNothing() throws {
@@ -86,8 +111,8 @@ final class TelegramNotificationServiceTests: XCTestCase {
                                                  value: "Device Away",
                                                  comment: "")
         XCTAssertEqual(lines[0], "Fred-Mac — \(eventDescription)")
-        XCTAssertTrue(lines[1].hasPrefix("Time: "))
-        XCTAssertEqual(lines[2], "RSSI: -47 dBm")
+        XCTAssertTrue(lines[1].hasPrefix("\(t("telegram_message_time")): "))
+        XCTAssertEqual(lines[2], "\(t("telegram_message_rssi")): -47 dBm")
     }
 
     func testIntrudedWithPhotoSendsPhotoAndDeletesFileOnSuccess() throws {
@@ -155,7 +180,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
     }
 
     func testTestNotificationUsesPhotoSetting() throws {
-        try settings.saveCredentials(token: "token", chatID: "chat")
+        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
         camera.result = .success(photoURL)
         var photoResult: Result<Void, Error>?
 
@@ -175,6 +200,48 @@ final class TelegramNotificationServiceTests: XCTestCase {
         XCTAssertEqual(camera.captureCalls, 1)
         XCTAssertEqual(sender.photoCalls.count, 1)
         XCTAssertEqual(sender.textCalls.count, 1)
+    }
+
+    func testPhotoEnabledTestSurfacesCaptureFailureAfterTextFallback() throws {
+        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
+        camera.result = .failure(.denied)
+        var result: Result<Void, Error>?
+
+        service.sendTest(hostName: "Fred-Mac") { result = $0 }
+
+        guard case .failure(let error)? = result else {
+            return XCTFail("Expected camera failure, got \(String(describing: result))")
+        }
+        XCTAssertEqual(error as? CameraCaptureError, .denied)
+        XCTAssertEqual(sender.textCalls.count, 1,
+                       "The test alert may still fall back to text")
+        XCTAssertEqual(sender.photoCalls.count, 0)
+        XCTAssertEqual(reporter.categories, ["camera"])
+    }
+
+    func testUserNotificationDeliveryCreatesAndDeliversOnMainThread() {
+        let delivered = expectation(description: "notification delivered")
+        let center = RecordingUserNotificationCenter()
+        center.onDeliver = { delivered.fulfill() }
+        var factoryWasOnMainThread = false
+        let delivery = UserNotificationFailureDelivery(
+            notificationCenter: center,
+            notificationFactory: {
+                factoryWasOnMainThread = Thread.isMainThread
+                return NSUserNotification()
+            }
+        )
+
+        DispatchQueue.global(qos: .utility).async {
+            delivery.deliver(message: "Offline")
+        }
+
+        wait(for: [delivered], timeout: 1)
+        XCTAssertTrue(factoryWasOnMainThread)
+        XCTAssertTrue(center.deliveryWasOnMainThread)
+        XCTAssertEqual(center.notifications.first?.subtitle,
+                       t("telegram_failure_notification_subtitle"))
+        XCTAssertEqual(center.notifications.first?.informativeText, "Offline")
     }
 
     func testFailureReporterRateLimitsSameFailureForFiveMinutes() {
@@ -201,7 +268,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
     }
 
     private func configure() throws {
-        try settings.saveCredentials(token: "token", chatID: "chat")
+        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
         settings.isEnabled = true
     }
 
@@ -227,5 +294,17 @@ final class TelegramNotificationServiceTests: XCTestCase {
                            file: file,
                            line: line)
         }
+    }
+}
+
+private final class RecordingUserNotificationCenter: UserNotificationCenterDelivering {
+    private(set) var notifications: [NSUserNotification] = []
+    private(set) var deliveryWasOnMainThread = false
+    var onDeliver: (() -> Void)?
+
+    func deliver(_ notification: NSUserNotification) {
+        deliveryWasOnMainThread = Thread.isMainThread
+        notifications.append(notification)
+        onDeliver?()
     }
 }

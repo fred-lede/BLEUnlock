@@ -61,6 +61,20 @@ final class StubCameraScheduler: CameraScheduling {
     }
 }
 
+struct ImmediateCameraTeardownScheduler: CameraTeardownScheduling {
+    func schedule(_ block: @escaping () -> Void) {
+        block()
+    }
+}
+
+final class StubCameraTeardownScheduler: CameraTeardownScheduling {
+    private(set) var blocks: [() -> Void] = []
+
+    func schedule(_ block: @escaping () -> Void) {
+        blocks.append(block)
+    }
+}
+
 final class LifetimeTrackingPhotoSession: PhotoSessionProviding {
     var result: Result<Data, CameraCaptureError>?
     var onDeinit: (() -> Void)?
@@ -75,6 +89,33 @@ final class LifetimeTrackingPhotoSession: PhotoSessionProviding {
 
     deinit {
         onDeinit?()
+    }
+}
+
+final class RetainingCompletionPhotoSession: PhotoSessionProviding {
+    var onDeinit: (() -> Void)?
+    private var completion: ((Result<Data, CameraCaptureError>) -> Void)?
+
+    func captureJPEG(completion: @escaping (Result<Data, CameraCaptureError>) -> Void) {
+        self.completion = completion
+    }
+
+    func stop() {}
+
+    deinit {
+        onDeinit?()
+    }
+}
+
+final class BlockingStopPhotoSession: PhotoSessionProviding {
+    let stopStarted = DispatchSemaphore(value: 0)
+    let allowStopToReturn = DispatchSemaphore(value: 0)
+
+    func captureJPEG(completion: @escaping (Result<Data, CameraCaptureError>) -> Void) {}
+
+    func stop() {
+        stopStarted.signal()
+        allowStopToReturn.wait()
     }
 }
 
@@ -132,7 +173,8 @@ final class CameraCaptureTests: XCTestCase {
         CameraCapture(authorization: StubCameraAuthorization(),
                       sessionFactory: { .success(session) },
                       temporaryDirectory: temporaryDirectory,
-                      scheduler: scheduler).capture { result in
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture { result in
             do {
                 let url = try result.get()
                 XCTAssertEqual(try Data(contentsOf: url), jpeg)
@@ -167,7 +209,8 @@ final class CameraCaptureTests: XCTestCase {
                           return .success(session)
                       },
                       temporaryDirectory: temporaryDirectory,
-                      scheduler: scheduler).capture { result in
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture { result in
             if case .success(let url) = result {
                 try? FileManager.default.removeItem(at: url)
             } else {
@@ -195,7 +238,8 @@ final class CameraCaptureTests: XCTestCase {
                           return .failure(.setupFailed)
                       },
                       temporaryDirectory: temporaryDirectory,
-                      scheduler: scheduler).capture { result in
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture { result in
             XCTAssertEqual(try? result.get(), nil)
             if case .failure(let error) = result {
                 XCTAssertEqual(error, .denied)
@@ -214,7 +258,8 @@ final class CameraCaptureTests: XCTestCase {
         CameraCapture(authorization: StubCameraAuthorization(),
                       sessionFactory: { .failure(.noCamera) },
                       temporaryDirectory: temporaryDirectory,
-                      scheduler: scheduler).capture { result in
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture { result in
             guard case .failure(let error) = result else {
                 return XCTFail("Expected failure, got \(result)")
             }
@@ -233,7 +278,10 @@ final class CameraCaptureTests: XCTestCase {
         CameraCapture(authorization: StubCameraAuthorization(),
                       sessionFactory: { .success(session) },
                       temporaryDirectory: temporaryDirectory,
-                      scheduler: scheduler).capture { results.append($0) }
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture {
+            results.append($0)
+        }
 
         XCTAssertEqual(session.captureCalls, 1)
         XCTAssertFalse(session.stopped)
@@ -258,7 +306,8 @@ final class CameraCaptureTests: XCTestCase {
         CameraCapture(authorization: StubCameraAuthorization(),
                       sessionFactory: { .success(session) },
                       temporaryDirectory: temporaryDirectory,
-                      scheduler: scheduler).capture { result in
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture { result in
             guard case .failure(let error) = result else {
                 return XCTFail("Expected failure, got \(result)")
             }
@@ -282,6 +331,7 @@ final class CameraCaptureTests: XCTestCase {
                                     sessionFactory: { .success(session!) },
                                     temporaryDirectory: temporaryDirectory,
                                     scheduler: DispatchCameraScheduler(),
+                                    teardownScheduler: ImmediateCameraTeardownScheduler(),
                                     timeout: 0.01)
         capture.capture { result in
             if case .success(let url) = result {
@@ -307,6 +357,7 @@ final class CameraCaptureTests: XCTestCase {
                                     sessionFactory: { .success(session!) },
                                     temporaryDirectory: temporaryDirectory,
                                     scheduler: DispatchCameraScheduler(),
+                                    teardownScheduler: ImmediateCameraTeardownScheduler(),
                                     timeout: 0)
         capture.capture { result in
             guard case .failure(let error) = result else {
@@ -321,7 +372,47 @@ final class CameraCaptureTests: XCTestCase {
         XCTAssertNil(weakSession.value)
     }
 
-    func testCancellingLifecycleReleasesProxyCompletionButRetainsDelegateUntilCallback() {
+    func testCancellingLifecycleDoesNotWaitForBlockedActionAndReleasesPendingCompletion() {
+        let lifecycle = PhotoSessionLifecycle()
+        var deliveredCompletions = 0
+        var completionOwner: LifetimeToken? = LifetimeToken()
+        let weakCompletionOwner = WeakBox(completionOwner)
+        XCTAssertTrue(lifecycle.prepare(completion: retainedResultCompletion(
+            owner: completionOwner!
+        ) {
+            deliveredCompletions += 1
+        }))
+        completionOwner = nil
+        XCTAssertNotNil(weakCompletionOwner.value)
+
+        let actionStarted = DispatchSemaphore(value: 0)
+        let allowActionToReturn = DispatchSemaphore(value: 0)
+        let actionReturned = expectation(description: "action returned")
+        DispatchQueue.global(qos: .utility).async {
+            _ = lifecycle.performIfActive {
+                actionStarted.signal()
+                allowActionToReturn.wait()
+            }
+            actionReturned.fulfill()
+        }
+        XCTAssertEqual(actionStarted.wait(timeout: .now() + 1), .success)
+
+        let cancelReturned = expectation(description: "cancel returned")
+        DispatchQueue.global(qos: .utility).async {
+            lifecycle.cancel()
+            cancelReturned.fulfill()
+        }
+        let cancelResult = XCTWaiter.wait(for: [cancelReturned], timeout: 0.2)
+        allowActionToReturn.signal()
+        wait(for: [actionReturned], timeout: 1)
+
+        XCTAssertEqual(cancelResult, .completed,
+                       "Cancellation must not wait for startRunning to return")
+        XCTAssertNil(weakCompletionOwner.value)
+        XCTAssertEqual(deliveredCompletions, 0)
+    }
+
+    func testCancellingLifecycleReleasesAbandonedDelegateWithoutCallback() {
         let lifecycle = PhotoSessionLifecycle()
         var deliveredCompletions = 0
         var completionOwner: LifetimeToken? = LifetimeToken()
@@ -334,20 +425,14 @@ final class CameraCaptureTests: XCTestCase {
 
         XCTAssertTrue(lifecycle.install(delegate: delegate!))
         completionOwner = nil
-        XCTAssertNotNil(weakCompletionOwner.value)
-
         lifecycle.cancel()
 
         XCTAssertEqual(delegate?.abandonCalls, 1)
         XCTAssertNil(weakCompletionOwner.value)
         delegate = nil
-        XCTAssertNotNil(weakDelegate.value,
-                        "Cancelled lifecycle must retain the AVFoundation delegate")
-
-        deliverAndFinishCallback(delegate: weakDelegate.value!, lifecycle: lifecycle)
-
         XCTAssertEqual(deliveredCompletions, 0)
-        XCTAssertNil(weakDelegate.value)
+        XCTAssertNil(weakDelegate.value,
+                     "An abandoned delegate must not be retained forever without a callback")
     }
 
     func testCancelledLifecycleSkipsQueuedStartAndPhotoCapture() {
@@ -369,6 +454,64 @@ final class CameraCaptureTests: XCTestCase {
         XCTAssertEqual(photoCaptures, 0)
     }
 
+    func testTimeoutCompletesBeforePotentiallyBlockedTeardown() throws {
+        let session = BlockingStopPhotoSession()
+        let teardownScheduler = StubCameraTeardownScheduler()
+        var results: [Result<URL, CameraCaptureError>] = []
+
+        CameraCapture(authorization: StubCameraAuthorization(),
+                      sessionFactory: { .success(session) },
+                      temporaryDirectory: temporaryDirectory,
+                      scheduler: scheduler,
+                      teardownScheduler: teardownScheduler).capture {
+            results.append($0)
+        }
+
+        try XCTUnwrap(scheduler.blocks.first)()
+
+        XCTAssertEqual(results.count, 1,
+                       "Timeout completion and text fallback must precede teardown")
+        guard case .failure(let error) = results[0] else {
+            return XCTFail("Expected timeout, got \(results[0])")
+        }
+        XCTAssertEqual(error, .timeout)
+        XCTAssertEqual(teardownScheduler.blocks.count, 1)
+
+        let teardownReturned = expectation(description: "teardown returned")
+        DispatchQueue.global(qos: .utility).async {
+            teardownScheduler.blocks[0]()
+            teardownReturned.fulfill()
+        }
+        XCTAssertEqual(session.stopStarted.wait(timeout: .now() + 1), .success)
+        XCTAssertEqual(results.count, 1)
+        session.allowStopToReturn.signal()
+        wait(for: [teardownReturned], timeout: 1)
+    }
+
+    func testTimeoutReleasesNeverCompletingSessionAfterTeardown() throws {
+        let released = expectation(description: "session released")
+        var session: RetainingCompletionPhotoSession? = RetainingCompletionPhotoSession()
+        session?.onDeinit = { released.fulfill() }
+        let weakSession = WeakBox(session)
+
+        CameraCapture(authorization: StubCameraAuthorization(),
+                      sessionFactory: { .success(session!) },
+                      temporaryDirectory: temporaryDirectory,
+                      scheduler: scheduler,
+                      teardownScheduler: ImmediateCameraTeardownScheduler()).capture { result in
+            guard case .failure(let error) = result else {
+                return XCTFail("Expected timeout, got \(result)")
+            }
+            XCTAssertEqual(error, .timeout)
+        }
+        session = nil
+
+        try XCTUnwrap(scheduler.blocks.first)()
+
+        wait(for: [released], timeout: 1)
+        XCTAssertNil(weakSession.value)
+    }
+
     private func retainedCompletion(owner: LifetimeToken,
                                     completion: @escaping () -> Void) -> () -> Void {
         return {
@@ -377,9 +520,14 @@ final class CameraCaptureTests: XCTestCase {
         }
     }
 
-    private func deliverAndFinishCallback(delegate: StubAbandonablePhotoDelegate,
-                                          lifecycle: PhotoSessionLifecycle) {
-        delegate.deliverCallback()
-        lifecycle.didFinishCallback(for: delegate)
+    private func retainedResultCompletion(
+        owner: LifetimeToken,
+        completion: @escaping () -> Void
+    ) -> (Result<Data, CameraCaptureError>) -> Void {
+        return { _ in
+            _ = owner
+            completion()
+        }
     }
+
 }

@@ -5,7 +5,7 @@ enum KeychainStoreError: LocalizedError {
     case status(OSStatus)
 
     var errorDescription: String? {
-        "Keychain operation failed (\(statusCode))."
+        String(format: t("telegram_error_keychain_status"), statusCode)
     }
 
     private var statusCode: OSStatus {

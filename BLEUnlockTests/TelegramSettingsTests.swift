@@ -39,7 +39,7 @@ final class TelegramSettingsTests: XCTestCase {
         settings.isEnabled = true
         settings.setEvent(.away, enabled: false)
         settings.takePhotoOnIntruded = false
-        try settings.saveCredentials(token: "token-123", chatID: "987654")
+        try settings.saveCredentials(replacementToken: "token-123", chatID: "987654")
 
         let reloaded = TelegramSettings(defaults: defaults, secrets: secrets)
         XCTAssertTrue(reloaded.isEnabled)
@@ -47,5 +47,18 @@ final class TelegramSettingsTests: XCTestCase {
         XCTAssertFalse(reloaded.takePhotoOnIntruded)
         XCTAssertEqual(try reloaded.credentials(),
                        TelegramCredentials(token: "token-123", chatID: "987654"))
+    }
+
+    func testBlankOrNilReplacementPreservesStoredToken() throws {
+        let settings = TelegramSettings(defaults: defaults, secrets: secrets)
+        try settings.saveCredentials(replacementToken: "original", chatID: "old-chat")
+
+        try settings.saveCredentials(replacementToken: "  \n", chatID: "new-chat")
+        XCTAssertEqual(try settings.credentials(),
+                       TelegramCredentials(token: "original", chatID: "new-chat"))
+
+        try settings.saveCredentials(replacementToken: nil, chatID: "newest-chat")
+        XCTAssertEqual(try settings.credentials(),
+                       TelegramCredentials(token: "original", chatID: "newest-chat"))
     }
 }

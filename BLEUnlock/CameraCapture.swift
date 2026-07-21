@@ -17,19 +17,19 @@ enum CameraCaptureError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .denied:
-            return "Camera access was denied."
+            return t("telegram_camera_error_denied")
         case .restricted:
-            return "Camera access is restricted."
+            return t("telegram_camera_error_restricted")
         case .noCamera:
-            return "No camera is available."
+            return t("telegram_camera_error_no_camera")
         case .setupFailed:
-            return "The camera could not be configured."
+            return t("telegram_camera_error_setup_failed")
         case .captureFailed:
-            return "The camera could not capture a photo."
+            return t("telegram_camera_error_capture_failed")
         case .timeout:
-            return "The camera capture timed out."
+            return t("telegram_camera_error_timeout")
         case .fileWriteFailed:
-            return "The captured photo could not be saved."
+            return t("telegram_camera_error_file_write_failed")
         }
     }
 }
@@ -54,16 +54,36 @@ protocol CameraScheduling {
                   _ block: @escaping () -> Void) -> ScheduledCancellation
 }
 
+protocol CameraTeardownScheduling {
+    func schedule(_ block: @escaping () -> Void)
+}
+
 protocol AbandonablePhotoCaptureDelegate: AnyObject {
     func abandon()
 }
 
 final class PhotoSessionLifecycle {
     private let stateLock = NSLock()
-    private let actionGate = NSRecursiveLock()
     private var cancelled = false
+    private var pendingCompletion: ((Result<Data, CameraCaptureError>) -> Void)?
     private var activeDelegates: [ObjectIdentifier: AbandonablePhotoCaptureDelegate] = [:]
-    private var abandonedDelegates: [ObjectIdentifier: AbandonablePhotoCaptureDelegate] = [:]
+
+    func prepare(completion: @escaping (Result<Data, CameraCaptureError>) -> Void) -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        guard !cancelled else { return false }
+        pendingCompletion = completion
+        return true
+    }
+
+    func takePreparedCompletion() -> ((Result<Data, CameraCaptureError>) -> Void)? {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        guard !cancelled else { return nil }
+        let completion = pendingCompletion
+        pendingCompletion = nil
+        return completion
+    }
 
     func install(delegate: AbandonablePhotoCaptureDelegate) -> Bool {
         stateLock.lock()
@@ -75,9 +95,6 @@ final class PhotoSessionLifecycle {
 
     @discardableResult
     func performIfActive(_ action: () -> Void) -> Bool {
-        actionGate.lock()
-        defer { actionGate.unlock() }
-
         stateLock.lock()
         let isActive = !cancelled
         stateLock.unlock()
@@ -94,25 +111,18 @@ final class PhotoSessionLifecycle {
             return
         }
         cancelled = true
+        pendingCompletion = nil
         let delegates = Array(activeDelegates.values)
-        for delegate in delegates {
-            let identifier = ObjectIdentifier(delegate)
-            abandonedDelegates[identifier] = delegate
-            activeDelegates[identifier] = nil
-        }
+        activeDelegates.removeAll()
         stateLock.unlock()
 
         delegates.forEach { $0.abandon() }
-
-        actionGate.lock()
-        actionGate.unlock()
     }
 
     func didFinishCallback(for delegate: AbandonablePhotoCaptureDelegate) {
         stateLock.lock()
         let identifier = ObjectIdentifier(delegate)
         activeDelegates[identifier] = nil
-        abandonedDelegates[identifier] = nil
         stateLock.unlock()
     }
 }
@@ -122,17 +132,20 @@ final class CameraCapture: PhotoCapturing {
     private let sessionFactory: () -> Result<PhotoSessionProviding, CameraCaptureError>
     private let temporaryDirectory: URL
     private let scheduler: CameraScheduling
+    private let teardownScheduler: CameraTeardownScheduling
     private let timeout: TimeInterval
 
     init(authorization: CameraAuthorizationProviding = AVCameraAuthorization(),
          sessionFactory: @escaping () -> Result<PhotoSessionProviding, CameraCaptureError> = AVPhotoSession.make,
          temporaryDirectory: URL = FileManager.default.temporaryDirectory,
          scheduler: CameraScheduling = DispatchCameraScheduler(),
+         teardownScheduler: CameraTeardownScheduling = DispatchCameraTeardownScheduler(),
          timeout: TimeInterval = 10) {
         self.authorization = authorization
         self.sessionFactory = sessionFactory
         self.temporaryDirectory = temporaryDirectory
         self.scheduler = scheduler
+        self.teardownScheduler = teardownScheduler
         self.timeout = timeout
     }
 
@@ -169,53 +182,93 @@ final class CameraCapture: PhotoCapturing {
             return
         }
 
-        let stateLock = NSLock()
-        var didFinish = false
-        var timeoutCancellation: ScheduledCancellation?
+        CameraCaptureAttempt(session: session,
+                             temporaryDirectory: temporaryDirectory,
+                             teardownScheduler: teardownScheduler,
+                             completion: completion)
+            .start(scheduler: scheduler, timeout: timeout)
+    }
+}
 
-        let finish: (Result<Data, CameraCaptureError>) -> Void = { [temporaryDirectory] result in
-            stateLock.lock()
-            guard !didFinish else {
-                stateLock.unlock()
-                return
-            }
-            didFinish = true
-            let cancellation = timeoutCancellation
-            timeoutCancellation = nil
-            stateLock.unlock()
+private final class CameraCaptureAttempt {
+    private let lock = NSLock()
+    private let temporaryDirectory: URL
+    private let teardownScheduler: CameraTeardownScheduling
+    private var session: PhotoSessionProviding?
+    private var completion: ((Result<URL, CameraCaptureError>) -> Void)?
+    private var timeoutCancellation: ScheduledCancellation?
+    private var didFinish = false
 
-            cancellation?.cancel()
-            session.stop()
+    init(session: PhotoSessionProviding,
+         temporaryDirectory: URL,
+         teardownScheduler: CameraTeardownScheduling,
+         completion: @escaping (Result<URL, CameraCaptureError>) -> Void) {
+        self.session = session
+        self.temporaryDirectory = temporaryDirectory
+        self.teardownScheduler = teardownScheduler
+        self.completion = completion
+    }
 
-            switch result {
-            case .success(let jpeg):
-                let url = temporaryDirectory
-                    .appendingPathComponent("BLEUnlock-intruded-\(UUID().uuidString)")
-                    .appendingPathExtension("jpg")
-                do {
-                    try jpeg.write(to: url, options: .atomic)
-                    completion(.success(url))
-                } catch {
-                    completion(.failure(.fileWriteFailed))
-                }
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-
-        session.captureJPEG(completion: finish)
-
-        let cancellation = scheduler.schedule(after: timeout) {
+    func start(scheduler: CameraScheduling, timeout: TimeInterval) {
+        let cancellation = scheduler.schedule(after: timeout) { [self] in
             finish(.failure(.timeout))
         }
-        stateLock.lock()
-        let captureAlreadyFinished = didFinish
-        if !captureAlreadyFinished {
+
+        lock.lock()
+        let activeSession: PhotoSessionProviding?
+        if didFinish {
+            activeSession = nil
+        } else {
             timeoutCancellation = cancellation
+            activeSession = session
         }
-        stateLock.unlock()
-        if captureAlreadyFinished {
+        lock.unlock()
+
+        guard let activeSession = activeSession else {
             cancellation.cancel()
+            return
+        }
+        activeSession.captureJPEG { [weak self] result in
+            self?.finish(result)
+        }
+    }
+
+    private func finish(_ result: Result<Data, CameraCaptureError>) {
+        lock.lock()
+        guard !didFinish,
+              let session = session,
+              let completion = completion else {
+            lock.unlock()
+            return
+        }
+        didFinish = true
+        self.session = nil
+        self.completion = nil
+        let cancellation = timeoutCancellation
+        timeoutCancellation = nil
+        lock.unlock()
+
+        cancellation?.cancel()
+
+        let finalResult: Result<URL, CameraCaptureError>
+        switch result {
+        case .success(let jpeg):
+            let url = temporaryDirectory
+                .appendingPathComponent("BLEUnlock-intruded-\(UUID().uuidString)")
+                .appendingPathExtension("jpg")
+            do {
+                try jpeg.write(to: url, options: .atomic)
+                finalResult = .success(url)
+            } catch {
+                finalResult = .failure(.fileWriteFailed)
+            }
+        case .failure(let error):
+            finalResult = .failure(error)
+        }
+
+        completion(finalResult)
+        teardownScheduler.schedule {
+            session.stop()
         }
     }
 }
@@ -263,6 +316,18 @@ final class DispatchCameraScheduler: CameraScheduling {
     }
 }
 
+final class DispatchCameraTeardownScheduler: CameraTeardownScheduling {
+    private let queue: DispatchQueue
+
+    init(queue: DispatchQueue = DispatchQueue.global(qos: .utility)) {
+        self.queue = queue
+    }
+
+    func schedule(_ block: @escaping () -> Void) {
+        queue.async(execute: block)
+    }
+}
+
 final class AVPhotoSession: PhotoSessionProviding {
     private let session: AVCaptureSession
     private let output: AVCapturePhotoOutput
@@ -300,17 +365,17 @@ final class AVPhotoSession: PhotoSessionProviding {
     }
 
     func captureJPEG(completion: @escaping (Result<Data, CameraCaptureError>) -> Void) {
-        queue.async { [self] in
-            let proxy = AVPhotoCaptureDelegateProxy(completion: completion) { [lifecycle] proxy in
-                lifecycle.didFinishCallback(for: proxy)
+        guard lifecycle.prepare(completion: completion) else { return }
+        queue.async { [session, output, lifecycle] in
+            guard lifecycle.performIfActive({ session.startRunning() }) else {
+                return
+            }
+            guard let completion = lifecycle.takePreparedCompletion() else { return }
+            let proxy = AVPhotoCaptureDelegateProxy(completion: completion) { [weak lifecycle] proxy in
+                lifecycle?.didFinishCallback(for: proxy)
             }
             guard lifecycle.install(delegate: proxy) else {
                 proxy.abandon()
-                return
-            }
-            guard lifecycle.performIfActive({ session.startRunning() }) else {
-                proxy.abandon()
-                lifecycle.didFinishCallback(for: proxy)
                 return
             }
             guard lifecycle.performIfActive({
