@@ -93,6 +93,77 @@ final class LocalizationTests: XCTestCase {
         }
     }
 
+    func testEveryLocalizationContainsExactLocationUsageDescription() throws {
+        let expectedDescriptions = [
+            "Base": "BLEUnlock gets this Mac's location at capture time and attaches the coordinates and map to the Telegram security notification.",
+            "da": "BLEUnlock henter denne Macs placering på optagelsestidspunktet og vedhæfter koordinater og kort til Telegram-sikkerhedsmeddelelsen.",
+            "de": "BLEUnlock ermittelt den Standort dieses Macs zum Aufnahmezeitpunkt und fügt Koordinaten und Karte der Telegram-Sicherheitsmeldung hinzu.",
+            "ja": "BLEUnlockは撮影時のこのMacの位置情報を取得し、座標と地図をTelegramのセキュリティ通知に添付します。",
+            "nb": "BLEUnlock henter posisjonen til denne Macen på opptakstidspunktet og legger ved koordinater og kart i Telegram-sikkerhetsvarslet.",
+            "sv": "BLEUnlock hämtar den här Mac-datorns plats när fotot tas och bifogar koordinater och karta till Telegram-säkerhetsnotisen.",
+            "tr": "BLEUnlock fotoğraf çekildiğinde bu Mac'in konumunu alır ve koordinatlarla haritayı Telegram güvenlik bildirimine ekler.",
+            "zh-Hans": "BLEUnlock 获取这台 Mac 拍照时的位置，并将坐标和地图附加到 Telegram 安全通知。",
+            "zh-Hant": "BLEUnlock 取得這部 Mac 拍照當時的位置，並將座標與地圖附加到 Telegram 安全通知。"
+        ]
+
+        for name in localizationDirectories {
+            let url = repository.appendingPathComponent("BLEUnlock/\(name).lproj/InfoPlist.strings")
+            let values = try strings(at: url)
+            let description = try XCTUnwrap(values["NSLocationUsageDescription"],
+                                            "Missing NSLocationUsageDescription in \(name)")
+            XCTAssertFalse(description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            XCTAssertEqual(description, expectedDescriptions[name])
+        }
+    }
+
+    func testBaseInfoPlistContainsMacLocationUsageDescriptionOnly() throws {
+        let url = repository.appendingPathComponent("BLEUnlock/Info.plist")
+        let values = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: Data(contentsOf: url),
+                                                   options: [],
+                                                   format: nil) as? [String: Any]
+        )
+
+        XCTAssertEqual(values["NSLocationUsageDescription"] as? String,
+                       "BLEUnlock gets this Mac's location at capture time and attaches the coordinates and map to the Telegram security notification.")
+        XCTAssertNil(values["NSLocationAlwaysUsageDescription"])
+        XCTAssertNil(values["NSLocationAlwaysAndWhenInUseUsageDescription"])
+        XCTAssertNil(values["NSLocationWhenInUseUsageDescription"])
+    }
+
+    func testProductionEntitlementsAllowMacLocation() throws {
+        let url = repository.appendingPathComponent("BLEUnlock/BLEUnlock.entitlements")
+        let values = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: Data(contentsOf: url),
+                                                   options: [],
+                                                   format: nil) as? [String: Any]
+        )
+        XCTAssertEqual(values["com.apple.security.personal-information.location"] as? Bool,
+                       true)
+    }
+
+    func testOnlyAppBuildConfigurationsEnableLocationResourceAccess() throws {
+        let source = try String(contentsOf: repository.appendingPathComponent(
+            "BLEUnlock.xcodeproj/project.pbxproj"
+        ))
+        let appConfigurations = ["3DD4B65F226C1C3400451B7B", "3DD4B660226C1C3400451B7B"]
+        let otherTargetConfigurations = [
+            "3D600A4C22701A5C0068FB7B", "3D600A4D22701A5C0068FB7B",
+            "7E1000193000000000000001", "7E1000203000000000000001"
+        ]
+
+        XCTAssertEqual(source.components(separatedBy: "ENABLE_RESOURCE_ACCESS_LOCATION = YES;").count - 1,
+                       2)
+        for identifier in appConfigurations {
+            XCTAssertTrue(try buildConfiguration(identifier, in: source)
+                .contains("ENABLE_RESOURCE_ACCESS_LOCATION = YES;"))
+        }
+        for identifier in otherTargetConfigurations {
+            XCTAssertFalse(try buildConfiguration(identifier, in: source)
+                .contains("ENABLE_RESOURCE_ACCESS_LOCATION"))
+        }
+    }
+
     func testProductionTelegramLocalizationReferencesAreCovered() throws {
         let generatedEventKeys = Set(TelegramEvent.allCases.map {
             "telegram_event_\($0.rawValue)"
@@ -159,5 +230,12 @@ final class LocalizationTests: XCTestCase {
                                                                options: [],
                                                                format: nil)
         return try XCTUnwrap(plist as? [String: String])
+    }
+
+    private func buildConfiguration(_ identifier: String, in source: String) throws -> Substring {
+        let start = try XCTUnwrap(source.range(of: "\(identifier) /*"))
+        let suffix = source[start.lowerBound...]
+        let end = try XCTUnwrap(suffix.range(of: "\n\t\t};"))
+        return suffix[..<end.upperBound]
     }
 }
