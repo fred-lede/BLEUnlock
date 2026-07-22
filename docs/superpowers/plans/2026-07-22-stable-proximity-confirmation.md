@@ -666,7 +666,7 @@ git commit -m "Add burst sampling for proximity confirmation"
 - Consumes: `ProximityMonitor.receive(rssi:unlockThreshold:allowsBurst:)` and `reset(reason:)`.
 - Produces: the existing `BLEDelegate.updatePresence(presence:reason:)` call with `presence == true` and reason `close`, emitted only after confirmation.
 
-- [ ] **Step 1: Add a failing regression test for identical decisions with unrelated photo state**
+- [ ] **Step 1: Add a characterization regression test for identical decisions with unrelated photo state**
 
 Add to `ProximityMonitorTests`:
 
