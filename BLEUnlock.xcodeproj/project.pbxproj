@@ -8,7 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		7E10004C3000000000000001 /* ProximityConfirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10004D3000000000000001 /* ProximityConfirmation.swift */; };
+		7E1000503000000000000001 /* ProximityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000513000000000000001 /* ProximityMonitor.swift */; };
 		7E10004E3000000000000001 /* ProximityConfirmationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10004F3000000000000001 /* ProximityConfirmationTests.swift */; };
+		7E1000523000000000000001 /* ProximityMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000533000000000000001 /* ProximityMonitorTests.swift */; };
 		7E1000443000000000000001 /* MacLocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000453000000000000001 /* MacLocationProvider.swift */; };
 		7E1000463000000000000001 /* MacLocationProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000473000000000000001 /* MacLocationProviderTests.swift */; };
 		7E1000483000000000000001 /* PhotoLocationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10004A3000000000000001 /* PhotoLocationCoordinator.swift */; };
@@ -77,7 +79,9 @@
 
 /* Begin PBXFileReference section */
 		7E10004D3000000000000001 /* ProximityConfirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProximityConfirmation.swift; sourceTree = "<group>"; };
+		7E1000513000000000000001 /* ProximityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProximityMonitor.swift; sourceTree = "<group>"; };
 		7E10004F3000000000000001 /* ProximityConfirmationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProximityConfirmationTests.swift; sourceTree = "<group>"; };
+		7E1000533000000000000001 /* ProximityMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProximityMonitorTests.swift; sourceTree = "<group>"; };
 		7E1000453000000000000001 /* MacLocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacLocationProvider.swift; sourceTree = "<group>"; };
 		7E1000473000000000000001 /* MacLocationProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacLocationProviderTests.swift; sourceTree = "<group>"; };
 		7E10004A3000000000000001 /* PhotoLocationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLocationCoordinator.swift; sourceTree = "<group>"; };
@@ -224,6 +228,7 @@
 			isa = PBXGroup;
 			children = (
 				7E10004D3000000000000001 /* ProximityConfirmation.swift */,
+				7E1000513000000000000001 /* ProximityMonitor.swift */,
 				7E10004A3000000000000001 /* PhotoLocationCoordinator.swift */,
 				7E1000453000000000000001 /* MacLocationProvider.swift */,
 				7E1000313000000000000001 /* TelegramMenuController.swift */,
@@ -268,6 +273,7 @@
 			isa = PBXGroup;
 			children = (
 				7E10004F3000000000000001 /* ProximityConfirmationTests.swift */,
+				7E1000533000000000000001 /* ProximityMonitorTests.swift */,
 				7E10004B3000000000000001 /* PhotoLocationCoordinatorTests.swift */,
 				7E1000473000000000000001 /* MacLocationProviderTests.swift */,
 				7E1000423000000000000001 /* BLEScanTests.swift */,
@@ -452,6 +458,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7E10004C3000000000000001 /* ProximityConfirmation.swift in Sources */,
+				7E1000503000000000000001 /* ProximityMonitor.swift in Sources */,
 				7E1000483000000000000001 /* PhotoLocationCoordinator.swift in Sources */,
 				7E1000443000000000000001 /* MacLocationProvider.swift in Sources */,
 				7E1000323000000000000001 /* TelegramMenuController.swift in Sources */,
@@ -476,6 +483,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7E10004E3000000000000001 /* ProximityConfirmationTests.swift in Sources */,
+				7E1000523000000000000001 /* ProximityMonitorTests.swift in Sources */,
 				7E1000493000000000000001 /* PhotoLocationCoordinatorTests.swift in Sources */,
 				7E1000463000000000000001 /* MacLocationProviderTests.swift in Sources */,
 				7E1000433000000000000001 /* BLEScanTests.swift in Sources */,
