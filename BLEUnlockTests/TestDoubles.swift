@@ -43,10 +43,17 @@ final class RecordingTelegramSender: TelegramSending {
         let caption: String
     }
 
+    struct LocationCall {
+        let credentials: TelegramCredentials
+        let location: TelegramLocation
+    }
+
     var textResult: Result<Void, TelegramError> = .success(())
     var photoResult: Result<Void, TelegramError> = .success(())
+    var locationResult: Result<Void, TelegramError> = .success(())
     private(set) var textCalls: [TextCall] = []
     private(set) var photoCalls: [PhotoCall] = []
+    private(set) var locationCalls: [LocationCall] = []
 
     func sendText(credentials: TelegramCredentials,
                   text: String,
@@ -63,6 +70,13 @@ final class RecordingTelegramSender: TelegramSending {
                                 photoURL: photoURL,
                                 caption: caption))
         completion(photoResult)
+    }
+
+    func sendLocation(credentials: TelegramCredentials,
+                      location: TelegramLocation,
+                      completion: @escaping (Result<Void, TelegramError>) -> Void) {
+        locationCalls.append(.init(credentials: credentials, location: location))
+        completion(locationResult)
     }
 }
 

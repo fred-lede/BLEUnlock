@@ -53,6 +53,53 @@ final class TelegramNotifierTests: XCTestCase {
         XCTAssertTrue(body.contains("text=A%2BB"))
     }
 
+    func testSendLocationUsesTelegramEndpointAndFormFields() throws {
+        transport.result = .success((Data(#"{"ok":true}"#.utf8), response(status: 200)))
+        let credentials = TelegramCredentials(token: "token-SECRET", chatID: "987654")
+        let location = TelegramLocation(latitude: 25.0330,
+                                        longitude: 121.5654,
+                                        horizontalAccuracy: 18,
+                                        timestamp: Date())
+        let done = expectation(description: "completion")
+
+        notifier.sendLocation(credentials: credentials, location: location) { result in
+            guard case .success = result else {
+                return XCTFail("Expected success, got \(result)")
+            }
+            done.fulfill()
+        }
+
+        wait(for: [done], timeout: 1)
+        let request = try XCTUnwrap(transport.requests.first)
+        XCTAssertEqual(request.url?.path, "/bottoken-SECRET/sendLocation")
+        XCTAssertEqual(request.httpMethod, "POST")
+        let body = String(decoding: try XCTUnwrap(request.httpBody), as: UTF8.self)
+        XCTAssertTrue(body.contains("chat_id=987654"))
+        XCTAssertTrue(body.contains("latitude=25.033"))
+        XCTAssertTrue(body.contains("longitude=121.5654"))
+    }
+
+    func testSendLocationRedactsCredentialsFromRejectedResponse() {
+        let payload = #"{"ok":false,"description":"token-SECRET 987654 rejected"}"#
+        transport.result = .success((Data(payload.utf8), response(status: 200)))
+        let done = expectation(description: "completion")
+        let location = TelegramLocation(latitude: 25.033,
+                                        longitude: 121.5654,
+                                        horizontalAccuracy: 18,
+                                        timestamp: Date())
+
+        notifier.sendLocation(credentials: .init(token: "token-SECRET", chatID: "987654"),
+                              location: location) { result in
+            guard case .failure(let error) = result else {
+                return XCTFail("Expected rejection, got \(result)")
+            }
+            XCTAssertEqual(error, .rejected("[redacted] [redacted] rejected"))
+            done.fulfill()
+        }
+
+        wait(for: [done], timeout: 1)
+    }
+
     func testSendPhotoBuildsMultipartWithJPEGAndCaption() throws {
         let photoBytes = Data([0xFF, 0xD8, 0x00, 0x7F, 0xD9])
         let directory = FileManager.default.temporaryDirectory
