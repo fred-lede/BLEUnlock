@@ -3,34 +3,14 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7E1000063000000000000001 /* TelegramEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000213000000000000001 /* TelegramEvent.swift */; };
-		7E1000073000000000000001 /* TelegramSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000223000000000000001 /* TelegramSettings.swift */; };
-		7E1000013000000000000001 /* TelegramSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000113000000000000001 /* TelegramSettingsTests.swift */; };
-		7E1000023000000000000001 /* TestDoubles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000123000000000000001 /* TestDoubles.swift */; };
-		7E1000093000000000000001 /* KeychainStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000233000000000000001 /* KeychainStoreTests.swift */; };
-		7E1000083000000000000001 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000243000000000000001 /* KeychainStore.swift */; };
-		7E10000A3000000000000001 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E1000253000000000000001 /* Security.framework */; };
-		7E10000C3000000000000001 /* TelegramNotifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000273000000000000001 /* TelegramNotifierTests.swift */; };
-		7E10000D3000000000000001 /* CameraCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000283000000000000001 /* CameraCaptureTests.swift */; };
-		7E10000E3000000000000001 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000293000000000000001 /* CameraCapture.swift */; };
-		7E10000F3000000000000001 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E10002A3000000000000001 /* AVFoundation.framework */; };
-		7E10000B3000000000000001 /* TelegramNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000263000000000000001 /* TelegramNotifier.swift */; };
-		7E10002B3000000000000001 /* TelegramNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002C3000000000000001 /* TelegramNotificationService.swift */; };
-		7E10002D3000000000000001 /* TelegramNotificationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002E3000000000000001 /* TelegramNotificationServiceTests.swift */; };
-		7E1000303000000000000001 /* TelegramMenuControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002F3000000000000001 /* TelegramMenuControllerTests.swift */; };
-		7E1000323000000000000001 /* TelegramMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000313000000000000001 /* TelegramMenuController.swift */; };
-		7E1000333000000000000001 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000343000000000000001 /* LocalizationTests.swift */; };
-		7E1000353000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7E1000363000000000000001 /* InfoPlist.strings */; };
-		7E1000433000000000000001 /* BLEScanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000423000000000000001 /* BLEScanTests.swift */; };
 		7E1000443000000000000001 /* MacLocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000453000000000000001 /* MacLocationProvider.swift */; };
 		7E1000463000000000000001 /* MacLocationProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000473000000000000001 /* MacLocationProviderTests.swift */; };
 		7E1000483000000000000001 /* PhotoLocationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10004A3000000000000001 /* PhotoLocationCoordinator.swift */; };
 		7E1000493000000000000001 /* PhotoLocationCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10004B3000000000000001 /* PhotoLocationCoordinatorTests.swift */; };
-		7E1000033000000000000001 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E1000133000000000000001 /* XCTest.framework */; };
 		3D2CF85B255102B300157996 /* MediaRemote.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D2CF85A255102B300157996 /* MediaRemote.framework */; };
 		3D2FCF08226C99CB007A06E7 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3D2FCF07226C99CB007A06E7 /* Images.xcassets */; };
 		3D4EE4112279E55A00AF9E93 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 3D4EE4102279E55A00AF9E93 /* AppDelegate.m */; };
@@ -48,6 +28,26 @@
 		3DD4B664226C1CF000451B7B /* lowlevel.c in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4B663226C1CF000451B7B /* lowlevel.c */; };
 		3DD4B666226C1DF200451B7B /* BLE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4B665226C1DF200451B7B /* BLE.swift */; };
 		3DD4B669226C1E3700451B7B /* login.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3DD4B668226C1E3700451B7B /* login.framework */; };
+		7E1000013000000000000001 /* TelegramSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000113000000000000001 /* TelegramSettingsTests.swift */; };
+		7E1000023000000000000001 /* TestDoubles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000123000000000000001 /* TestDoubles.swift */; };
+		7E1000033000000000000001 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E1000133000000000000001 /* XCTest.framework */; };
+		7E1000063000000000000001 /* TelegramEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000213000000000000001 /* TelegramEvent.swift */; };
+		7E1000073000000000000001 /* TelegramSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000223000000000000001 /* TelegramSettings.swift */; };
+		7E1000083000000000000001 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000243000000000000001 /* KeychainStore.swift */; };
+		7E1000093000000000000001 /* KeychainStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000233000000000000001 /* KeychainStoreTests.swift */; };
+		7E10000A3000000000000001 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E1000253000000000000001 /* Security.framework */; };
+		7E10000B3000000000000001 /* TelegramNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000263000000000000001 /* TelegramNotifier.swift */; };
+		7E10000C3000000000000001 /* TelegramNotifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000273000000000000001 /* TelegramNotifierTests.swift */; };
+		7E10000D3000000000000001 /* CameraCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000283000000000000001 /* CameraCaptureTests.swift */; };
+		7E10000E3000000000000001 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000293000000000000001 /* CameraCapture.swift */; };
+		7E10000F3000000000000001 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E10002A3000000000000001 /* AVFoundation.framework */; };
+		7E10002B3000000000000001 /* TelegramNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002C3000000000000001 /* TelegramNotificationService.swift */; };
+		7E10002D3000000000000001 /* TelegramNotificationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002E3000000000000001 /* TelegramNotificationServiceTests.swift */; };
+		7E1000303000000000000001 /* TelegramMenuControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002F3000000000000001 /* TelegramMenuControllerTests.swift */; };
+		7E1000323000000000000001 /* TelegramMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000313000000000000001 /* TelegramMenuController.swift */; };
+		7E1000333000000000000001 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000343000000000000001 /* LocalizationTests.swift */; };
+		7E1000353000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7E1000363000000000000001 /* InfoPlist.strings */; };
+		7E1000433000000000000001 /* BLEScanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000423000000000000001 /* BLEScanTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,41 +74,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		7E1000213000000000000001 /* TelegramEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramEvent.swift; sourceTree = "<group>"; };
-		7E1000223000000000000001 /* TelegramSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramSettings.swift; sourceTree = "<group>"; };
-		7E1000103000000000000001 /* BLEUnlockTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BLEUnlockTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		7E1000113000000000000001 /* TelegramSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramSettingsTests.swift; sourceTree = "<group>"; };
-		7E1000123000000000000001 /* TestDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDoubles.swift; sourceTree = "<group>"; };
-		7E1000233000000000000001 /* KeychainStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
-		7E1000243000000000000001 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
-		7E1000253000000000000001 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		7E1000273000000000000001 /* TelegramNotifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotifierTests.swift; sourceTree = "<group>"; };
-		7E1000283000000000000001 /* CameraCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureTests.swift; sourceTree = "<group>"; };
-		7E1000293000000000000001 /* CameraCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCapture.swift; sourceTree = "<group>"; };
-		7E10002A3000000000000001 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
-		7E1000263000000000000001 /* TelegramNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotifier.swift; sourceTree = "<group>"; };
-		7E10002C3000000000000001 /* TelegramNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotificationService.swift; sourceTree = "<group>"; };
-		7E10002E3000000000000001 /* TelegramNotificationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotificationServiceTests.swift; sourceTree = "<group>"; };
-		7E10002F3000000000000001 /* TelegramMenuControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramMenuControllerTests.swift; sourceTree = "<group>"; };
-		7E1000313000000000000001 /* TelegramMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramMenuController.swift; sourceTree = "<group>"; };
-		7E1000343000000000000001 /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
-		7E1000373000000000000001 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Base; path = Base.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		7E1000383000000000000001 /* da */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = da; path = da.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		7E1000393000000000000001 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		7E10003A3000000000000001 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		7E10003B3000000000000001 /* nb */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nb; path = nb.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		7E10003C3000000000000001 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		7E10003D3000000000000001 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		7E10003E3000000000000001 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
-		7E10003F3000000000000001 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
-		7E1000403000000000000001 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
-		7E1000413000000000000001 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/AboutBox.strings"; sourceTree = "<group>"; };
-		7E1000423000000000000001 /* BLEScanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEScanTests.swift; sourceTree = "<group>"; };
 		7E1000453000000000000001 /* MacLocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacLocationProvider.swift; sourceTree = "<group>"; };
 		7E1000473000000000000001 /* MacLocationProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacLocationProviderTests.swift; sourceTree = "<group>"; };
 		7E10004A3000000000000001 /* PhotoLocationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLocationCoordinator.swift; sourceTree = "<group>"; };
 		7E10004B3000000000000001 /* PhotoLocationCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLocationCoordinatorTests.swift; sourceTree = "<group>"; };
-		7E1000133000000000000001 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		3D2CF85A255102B300157996 /* MediaRemote.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaRemote.framework; path = ../../../../System/Library/PrivateFrameworks/MediaRemote.framework; sourceTree = "<group>"; };
 		3D2FCF07226C99CB007A06E7 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		3D43D0112765FCCB00D15991 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/AboutBox.strings; sourceTree = "<group>"; };
@@ -144,6 +113,37 @@
 		3DD4B663226C1CF000451B7B /* lowlevel.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lowlevel.c; sourceTree = "<group>"; };
 		3DD4B665226C1DF200451B7B /* BLE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLE.swift; sourceTree = "<group>"; };
 		3DD4B668226C1E3700451B7B /* login.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = login.framework; path = ../../../../System/Library/PrivateFrameworks/login.framework; sourceTree = "<group>"; };
+		7E1000103000000000000001 /* BLEUnlockTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BLEUnlockTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7E1000113000000000000001 /* TelegramSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramSettingsTests.swift; sourceTree = "<group>"; };
+		7E1000123000000000000001 /* TestDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDoubles.swift; sourceTree = "<group>"; };
+		7E1000133000000000000001 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		7E1000213000000000000001 /* TelegramEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramEvent.swift; sourceTree = "<group>"; };
+		7E1000223000000000000001 /* TelegramSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramSettings.swift; sourceTree = "<group>"; };
+		7E1000233000000000000001 /* KeychainStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
+		7E1000243000000000000001 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		7E1000253000000000000001 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		7E1000263000000000000001 /* TelegramNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotifier.swift; sourceTree = "<group>"; };
+		7E1000273000000000000001 /* TelegramNotifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotifierTests.swift; sourceTree = "<group>"; };
+		7E1000283000000000000001 /* CameraCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureTests.swift; sourceTree = "<group>"; };
+		7E1000293000000000000001 /* CameraCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCapture.swift; sourceTree = "<group>"; };
+		7E10002A3000000000000001 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		7E10002C3000000000000001 /* TelegramNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotificationService.swift; sourceTree = "<group>"; };
+		7E10002E3000000000000001 /* TelegramNotificationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotificationServiceTests.swift; sourceTree = "<group>"; };
+		7E10002F3000000000000001 /* TelegramMenuControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramMenuControllerTests.swift; sourceTree = "<group>"; };
+		7E1000313000000000000001 /* TelegramMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramMenuController.swift; sourceTree = "<group>"; };
+		7E1000343000000000000001 /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
+		7E1000373000000000000001 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Base; path = Base.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E1000383000000000000001 /* da */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = da; path = da.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E1000393000000000000001 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003A3000000000000001 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003B3000000000000001 /* nb */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nb; path = nb.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003C3000000000000001 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003D3000000000000001 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E10003E3000000000000001 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		7E10003F3000000000000001 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		7E1000403000000000000001 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		7E1000413000000000000001 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/AboutBox.strings"; sourceTree = "<group>"; };
+		7E1000423000000000000001 /* BLEScanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEScanTests.swift; sourceTree = "<group>"; };
 		B1EFF91422E010F50010DB0A /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/AboutBox.strings"; sourceTree = "<group>"; };
 		B1EFF91622E010F50010DB0A /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		F749D28C277515C600C78C28 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/AboutBox.strings; sourceTree = "<group>"; };
@@ -202,6 +202,7 @@
 				3D600A4122701A5B0068FB7B /* Launcher */,
 				3DD4B651226C1C3200451B7B /* Products */,
 				3DD4B667226C1E3700451B7B /* Frameworks */,
+				B6396C65301011860025257E /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -247,6 +248,17 @@
 			path = BLEUnlock;
 			sourceTree = "<group>";
 		};
+		3DD4B667226C1E3700451B7B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7E10002A3000000000000001 /* AVFoundation.framework */,
+				7E1000253000000000000001 /* Security.framework */,
+				3D2CF85A255102B300157996 /* MediaRemote.framework */,
+				3DD4B668226C1E3700451B7B /* login.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		7E1000143000000000000001 /* BLEUnlockTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -265,15 +277,12 @@
 			path = BLEUnlockTests;
 			sourceTree = "<group>";
 		};
-		3DD4B667226C1E3700451B7B /* Frameworks */ = {
+		B6396C65301011860025257E /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
-				7E10002A3000000000000001 /* AVFoundation.framework */,
-				7E1000253000000000000001 /* Security.framework */,
-				3D2CF85A255102B300157996 /* MediaRemote.framework */,
-				3DD4B668226C1E3700451B7B /* login.framework */,
+				7E1000133000000000000001 /* XCTest.framework */,
 			);
-			name = Frameworks;
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -337,8 +346,9 @@
 		3DD4B648226C1C3200451B7B /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1020;
-				LastUpgradeCheck = 1200;
+				LastUpgradeCheck = 2660;
 				ORGANIZATIONNAME = "Takeshi Sone";
 				TargetAttributes = {
 					3D600A3F22701A5A0068FB7B = {
@@ -422,24 +432,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		7E1000183000000000000001 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				7E1000493000000000000001 /* PhotoLocationCoordinatorTests.swift in Sources */,
-				7E1000463000000000000001 /* MacLocationProviderTests.swift in Sources */,
-				7E1000433000000000000001 /* BLEScanTests.swift in Sources */,
-				7E1000333000000000000001 /* LocalizationTests.swift in Sources */,
-				7E1000303000000000000001 /* TelegramMenuControllerTests.swift in Sources */,
-				7E10002D3000000000000001 /* TelegramNotificationServiceTests.swift in Sources */,
-				7E10000D3000000000000001 /* CameraCaptureTests.swift in Sources */,
-				7E1000093000000000000001 /* KeychainStoreTests.swift in Sources */,
-				7E10000C3000000000000001 /* TelegramNotifierTests.swift in Sources */,
-				7E1000013000000000000001 /* TelegramSettingsTests.swift in Sources */,
-				7E1000023000000000000001 /* TestDoubles.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		3D600A3C22701A5A0068FB7B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -472,6 +464,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7E1000183000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7E1000493000000000000001 /* PhotoLocationCoordinatorTests.swift in Sources */,
+				7E1000463000000000000001 /* MacLocationProviderTests.swift in Sources */,
+				7E1000433000000000000001 /* BLEScanTests.swift in Sources */,
+				7E1000333000000000000001 /* LocalizationTests.swift in Sources */,
+				7E1000303000000000000001 /* TelegramMenuControllerTests.swift in Sources */,
+				7E10002D3000000000000001 /* TelegramNotificationServiceTests.swift in Sources */,
+				7E10000D3000000000000001 /* CameraCaptureTests.swift in Sources */,
+				7E1000093000000000000001 /* KeychainStoreTests.swift in Sources */,
+				7E10000C3000000000000001 /* TelegramNotifierTests.swift in Sources */,
+				7E1000013000000000000001 /* TelegramSettingsTests.swift in Sources */,
+				7E1000023000000000000001 /* TestDoubles.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -483,22 +493,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		7E1000363000000000000001 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				7E1000373000000000000001 /* Base */,
-				7E1000383000000000000001 /* da */,
-				7E1000393000000000000001 /* de */,
-				7E10003A3000000000000001 /* ja */,
-				7E10003B3000000000000001 /* nb */,
-				7E10003C3000000000000001 /* sv */,
-				7E10003D3000000000000001 /* tr */,
-				7E10003E3000000000000001 /* zh-Hans */,
-				7E10003F3000000000000001 /* zh-Hant */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
 		3D600A35226CC1A40068FB7B /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -539,6 +533,22 @@
 			name = MainMenu.xib;
 			sourceTree = "<group>";
 		};
+		7E1000363000000000000001 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7E1000373000000000000001 /* Base */,
+				7E1000383000000000000001 /* da */,
+				7E1000393000000000000001 /* de */,
+				7E10003A3000000000000001 /* ja */,
+				7E10003B3000000000000001 /* nb */,
+				7E10003C3000000000000001 /* sv */,
+				7E10003D3000000000000001 /* tr */,
+				7E10003E3000000000000001 /* zh-Hans */,
+				7E10003F3000000000000001 /* zh-Hant */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
@@ -549,7 +559,8 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = 42LGPQYC7M;
+				DEAD_CODE_STRIPPING = YES;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = SA8S93KT9N;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Launcher/Info.plist;
 				INSTALL_PATH = "";
@@ -570,11 +581,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = 42LGPQYC7M;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = SA8S93KT9N;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Launcher/Info.plist;
 				INSTALL_PATH = "";
@@ -594,7 +607,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/build/$(CONFIGURATION)";
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -626,10 +638,14 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "-";
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/build/$(CONFIGURATION)";
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 42LGPQYC7M;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -649,6 +665,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -658,7 +675,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/build/$(CONFIGURATION)";
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -690,10 +706,14 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "-";
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/build/$(CONFIGURATION)";
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 42LGPQYC7M;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -706,6 +726,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
@@ -721,7 +742,8 @@
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 800;
-				DEVELOPMENT_TEAM = 42LGPQYC7M;
+				DEAD_CODE_STRIPPING = YES;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = SA8S93KT9N;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
 				FRAMEWORK_SEARCH_PATHS = "";
@@ -730,6 +752,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 1.12.3;
 				PRODUCT_BUNDLE_IDENTIFIER = jp.sone.BLEUnlock;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -748,25 +771,39 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				AUTOMATION_APPLE_EVENTS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = BLEUnlock/BLEUnlock.entitlements;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 800;
-				DEVELOPMENT_TEAM = 42LGPQYC7M;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = SA8S93KT9N;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
 				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				FRAMEWORK_SEARCH_PATHS = "";
 				INFOPLIST_FILE = BLEUnlock/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 1.12.3;
 				PRODUCT_BUNDLE_IDENTIFIER = jp.sone.BLEUnlock;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "BLEUnlock/BLEUnlock-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
