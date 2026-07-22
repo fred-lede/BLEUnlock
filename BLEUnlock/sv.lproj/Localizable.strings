@@ -78,3 +78,7 @@
 "telegram_failure_notification_subtitle" = "Telegram-notisen misslyckades";
 "telegram_message_time" = "Tid";
 "telegram_message_rssi" = "RSSI";
+"telegram_message_coordinates" = "GPS-koordinater";
+"telegram_message_accuracy" = "Platsnoggrannhet";
+"telegram_message_map" = "Karta";
+"telegram_location_unavailable" = "Platsen vid fotograferingstillfället är inte tillgänglig.";

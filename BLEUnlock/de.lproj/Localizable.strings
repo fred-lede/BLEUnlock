@@ -78,3 +78,7 @@
 "telegram_failure_notification_subtitle" = "Telegram-Benachrichtigung fehlgeschlagen";
 "telegram_message_time" = "Zeit";
 "telegram_message_rssi" = "RSSI";
+"telegram_message_coordinates" = "GPS-Koordinaten";
+"telegram_message_accuracy" = "Standortgenauigkeit";
+"telegram_message_map" = "Karte";
+"telegram_location_unavailable" = "Der Standort zum Aufnahmezeitpunkt ist nicht verfügbar.";

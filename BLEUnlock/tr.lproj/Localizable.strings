@@ -78,3 +78,7 @@
 "telegram_failure_notification_subtitle" = "Telegram bildirimi başarısız oldu";
 "telegram_message_time" = "Saat";
 "telegram_message_rssi" = "RSSI";
+"telegram_message_coordinates" = "GPS Koordinatları";
+"telegram_message_accuracy" = "Konum Doğruluğu";
+"telegram_message_map" = "Harita";
+"telegram_location_unavailable" = "Fotoğraf çekildiği andaki konum alınamadı.";

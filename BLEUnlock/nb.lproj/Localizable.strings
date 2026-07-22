@@ -78,3 +78,7 @@
 "telegram_failure_notification_subtitle" = "Telegram-varslingen mislyktes";
 "telegram_message_time" = "Tid";
 "telegram_message_rssi" = "RSSI";
+"telegram_message_coordinates" = "GPS-koordinater";
+"telegram_message_accuracy" = "Posisjonsnøyaktighet";
+"telegram_message_map" = "Kart";
+"telegram_location_unavailable" = "Posisjonen på opptakstidspunktet er ikke tilgjengelig.";

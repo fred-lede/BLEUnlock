@@ -267,6 +267,37 @@ final class TelegramNotificationServiceTests: XCTestCase {
         XCTAssertEqual(delivery.messages, ["Denied", "Offline", "Denied after interval"])
     }
 
+    func testPhotoCaptionIncludesCoordinatesAccuracyAndEscapedAppleMapsLink() {
+        let formatter = TelegramMessageFormatter()
+        let context = TelegramEventContext(event: .intruded,
+                                           hostName: "Fred-Mac",
+                                           timestamp: Date(timeIntervalSince1970: 1_000),
+                                           rssi: nil)
+        let location = TelegramLocation(latitude: 25.033,
+                                        longitude: 121.5654,
+                                        horizontalAccuracy: 18.4,
+                                        timestamp: context.timestamp)
+
+        let caption = formatter.photoCaption(for: context, location: location)
+
+        XCTAssertTrue(caption.contains("25.033000, 121.565400"))
+        XCTAssertTrue(caption.contains("±18 m"))
+        XCTAssertTrue(caption.contains("https://maps.apple.com/?ll=25.033000,121.565400"))
+    }
+
+    func testPhotoCaptionMarksLocationUnavailableWithoutCoordinates() {
+        let formatter = TelegramMessageFormatter()
+        let context = TelegramEventContext(event: .intruded,
+                                           hostName: "Fred-Mac",
+                                           timestamp: Date(timeIntervalSince1970: 1_000),
+                                           rssi: nil)
+
+        let caption = formatter.photoCaption(for: context, location: nil)
+
+        XCTAssertTrue(caption.contains(t("telegram_location_unavailable")))
+        XCTAssertFalse(caption.contains("maps.apple.com"))
+    }
+
     private func configure() throws {
         try settings.saveCredentials(replacementToken: "token", chatID: "chat")
         settings.isEnabled = true

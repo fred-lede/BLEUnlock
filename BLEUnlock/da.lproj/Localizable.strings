@@ -78,3 +78,7 @@
 "telegram_failure_notification_subtitle" = "Telegram-notifikationen mislykkedes";
 "telegram_message_time" = "Tid";
 "telegram_message_rssi" = "RSSI";
+"telegram_message_coordinates" = "GPS-koordinater";
+"telegram_message_accuracy" = "Placeringens nøjagtighed";
+"telegram_message_map" = "Kort";
+"telegram_location_unavailable" = "Placeringen på optagelsestidspunktet kunne ikke hentes.";

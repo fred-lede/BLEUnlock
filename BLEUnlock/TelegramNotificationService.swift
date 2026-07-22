@@ -9,6 +9,8 @@ protocol TelegramNotificationHandling {
 
 protocol TelegramMessageFormatting {
     func message(for context: TelegramEventContext) -> String
+    func photoCaption(for context: TelegramEventContext,
+                      location: TelegramLocation?) -> String
 }
 
 protocol FailureReporting {
@@ -78,6 +80,28 @@ final class TelegramMessageFormatter: TelegramMessageFormatting {
             lines.append("\(t("telegram_message_rssi")): \(rssi) dBm")
         }
         return lines.joined(separator: "\n")
+    }
+
+    func photoCaption(for context: TelegramEventContext,
+                      location: TelegramLocation?) -> String {
+        var lines = [message(for: context)]
+        guard let location = location else {
+            lines.append(t("telegram_location_unavailable"))
+            return lines.joined(separator: "\n")
+        }
+
+        let latitude = posixDecimal(location.latitude)
+        let longitude = posixDecimal(location.longitude)
+        lines.append("\(t("telegram_message_coordinates")): \(latitude), \(longitude)")
+        lines.append(String(format: "%@: ±%.0f m",
+                            t("telegram_message_accuracy"),
+                            location.horizontalAccuracy))
+        lines.append("\(t("telegram_message_map")): https://maps.apple.com/?ll=\(latitude),\(longitude)")
+        return lines.joined(separator: "\n")
+    }
+
+    private func posixDecimal(_ value: Double) -> String {
+        String(format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), value)
     }
 
     private func localizedDescription(for event: TelegramEvent) -> String {

@@ -78,3 +78,7 @@
 "telegram_failure_notification_subtitle" = "Telegram通知に失敗しました";
 "telegram_message_time" = "時刻";
 "telegram_message_rssi" = "RSSI";
+"telegram_message_coordinates" = "GPS座標";
+"telegram_message_accuracy" = "位置情報の精度";
+"telegram_message_map" = "地図";
+"telegram_location_unavailable" = "撮影時の位置情報を取得できませんでした。";
