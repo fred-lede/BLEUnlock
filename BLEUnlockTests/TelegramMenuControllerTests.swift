@@ -8,6 +8,7 @@ final class TelegramMenuControllerTests: XCTestCase {
     private var settings: TelegramSettings!
     private var service: RecordingTelegramNotificationService!
     private var dialogs: RecordingTelegramDialogPresenter!
+    private var locationAuthorization: RecordingLocationAuthorizationRequester!
     private var controller: TelegramMenuController!
 
     override func setUp() {
@@ -18,9 +19,11 @@ final class TelegramMenuControllerTests: XCTestCase {
         settings = TelegramSettings(defaults: defaults, secrets: MemorySecretStore())
         service = RecordingTelegramNotificationService()
         dialogs = RecordingTelegramDialogPresenter()
+        locationAuthorization = RecordingLocationAuthorizationRequester()
         controller = TelegramMenuController(settings: settings,
                                             service: service,
                                             dialogs: dialogs,
+                                            locationAuthorization: locationAuthorization,
                                             hostName: { "Fred-Mac" })
     }
 
@@ -31,6 +34,7 @@ final class TelegramMenuControllerTests: XCTestCase {
         settings = nil
         service = nil
         dialogs = nil
+        locationAuthorization = nil
         controller = nil
         super.tearDown()
     }
@@ -117,6 +121,38 @@ final class TelegramMenuControllerTests: XCTestCase {
         XCTAssertFalse(controller.privacyItem.isEnabled)
     }
 
+    func testLocationItemIsBelowPrivacyTextAndDisabledWhenPhotoIsOff() throws {
+        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
+        settings.takePhotoOnIntruded = false
+        controller.menuWillOpen(controller.menu)
+
+        XCTAssertEqual(controller.menu.index(of: controller.locationItem),
+                       controller.menu.index(of: controller.privacyItem) + 1)
+        XCTAssertFalse(controller.locationItem.isEnabled)
+        XCTAssertEqual(controller.locationItem.state, .off)
+    }
+
+    func testTurningPhotoOffDisablesLocationItem() {
+        controller.menuWillOpen(controller.menu)
+
+        controller.togglePhoto(controller.photoItem)
+
+        XCTAssertFalse(controller.locationItem.isEnabled)
+    }
+
+    func testEnablingLocationPersistsAndRequestsAuthorizationOnce() {
+        controller.toggleLocation(controller.locationItem)
+
+        XCTAssertTrue(settings.attachMacLocation)
+        XCTAssertEqual(locationAuthorization.requestCalls, 1)
+        XCTAssertEqual(controller.locationItem.state, .on)
+
+        controller.toggleLocation(controller.locationItem)
+
+        XCTAssertFalse(settings.attachMacLocation)
+        XCTAssertEqual(locationAuthorization.requestCalls, 1)
+    }
+
     func testControllerDoesNotReadOrRetainTelegramCredentials() throws {
         let repository = URL(fileURLWithPath: #file)
             .deletingLastPathComponent()
@@ -128,6 +164,14 @@ final class TelegramMenuControllerTests: XCTestCase {
         XCTAssertFalse(source.contains("settings.credentials()"))
         XCTAssertFalse(source.contains("TelegramCredentials"))
         XCTAssertTrue(source.contains("saveCredentials(replacementToken:"))
+    }
+}
+
+private final class RecordingLocationAuthorizationRequester: LocationAuthorizationRequesting {
+    private(set) var requestCalls = 0
+
+    func requestAuthorization() {
+        requestCalls += 1
     }
 }
 

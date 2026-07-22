@@ -47,6 +47,7 @@
 "telegram_event_unlocked" = "BLEUnlock tarafından kilit açıldı";
 "telegram_event_intruded" = "Elle kilit açıldı";
 "telegram_take_photo" = "Elle kilit açıldığında fotoğraf ekle";
+"telegram_attach_mac_location" = "Mac Konumunu Ekle";
 "telegram_status_not_configured" = "Yapılandırılmadı";
 "telegram_status_enabled" = "Etkin";
 "telegram_status_disabled" = "Devre dışı";
