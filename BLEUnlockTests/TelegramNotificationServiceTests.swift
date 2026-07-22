@@ -9,6 +9,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
     private var settings: TelegramSettings!
     private var sender: RecordingTelegramSender!
     private var camera: StubPhotoCapturer!
+    private var location: StubMacLocationProvider!
     private var reporter: RecordingFailureReporter!
     private var remover: RecordingFileRemover!
     private var service: TelegramNotificationService!
@@ -22,12 +23,14 @@ final class TelegramNotificationServiceTests: XCTestCase {
         settings = TelegramSettings(defaults: defaults, secrets: MemorySecretStore())
         sender = RecordingTelegramSender()
         camera = StubPhotoCapturer()
+        location = StubMacLocationProvider()
         reporter = RecordingFailureReporter()
         remover = RecordingFileRemover()
         service = TelegramNotificationService(
             settings: settings,
             sender: sender,
             camera: camera,
+            location: location,
             removeFile: remover.remove,
             reporter: reporter
         )
@@ -40,6 +43,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
         settings = nil
         sender = nil
         camera = nil
+        location = nil
         reporter = nil
         remover = nil
         service = nil
@@ -74,6 +78,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
             settings: settings,
             sender: sender,
             camera: camera,
+            location: location,
             removeFile: remover.remove,
             reporter: reporter
         )
@@ -177,6 +182,132 @@ final class TelegramNotificationServiceTests: XCTestCase {
         XCTAssertEqual(sender.textCalls.count, 0)
         XCTAssertEqual(remover.calls, [photoURL])
         XCTAssertEqual(reporter.categories, ["telegram"])
+    }
+
+    func testLocationEnabledSendsCaptionedPhotoThenNativeMap() throws {
+        try configure()
+        settings.attachMacLocation = true
+        camera.result = .success(photoURL)
+        let validLocation = TelegramLocation(latitude: 25.033,
+                                             longitude: 121.5654,
+                                             horizontalAccuracy: 18,
+                                             timestamp: Date(timeIntervalSince1970: 100))
+        location.result = .success(validLocation)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(sender.photoCalls.count, 1)
+        XCTAssertTrue(sender.photoCalls[0].caption.contains("25.033000, 121.565400"))
+        XCTAssertEqual(sender.locationCalls.map(\.location), [validLocation])
+        XCTAssertEqual(sender.callOrder, [.photo, .location])
+    }
+
+    func testLocationDisabledNeverCallsProviderOrSendsMap() throws {
+        try configure()
+        settings.attachMacLocation = false
+        camera.result = .success(photoURL)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertTrue(location.requestedDates.isEmpty)
+        XCTAssertTrue(sender.locationCalls.isEmpty)
+        XCTAssertEqual(sender.callOrder, [.photo])
+    }
+
+    func testLocationFailureSendsPhotoWithUnavailableCaptionAndNoMap() throws {
+        try configure()
+        settings.attachMacLocation = true
+        camera.result = .success(photoURL)
+        location.result = .failure(.timeout)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertTrue(sender.photoCalls[0].caption.contains(t("telegram_location_unavailable")))
+        XCTAssertTrue(sender.locationCalls.isEmpty)
+        XCTAssertEqual(reporter.categories, ["location"])
+        XCTAssertEqual(reporter.messages, [t("telegram_location_error")])
+    }
+
+    func testLocatedCameraFailureCancelsLocationAndUsesTextFallbackWithoutCoordinates() throws {
+        try configure()
+        settings.attachMacLocation = true
+        camera.result = .failure(.denied)
+        location.result = .success(.init(latitude: 25.033,
+                                         longitude: 121.5654,
+                                         horizontalAccuracy: 18,
+                                         timestamp: Date(timeIntervalSince1970: 100)))
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(location.token.cancelCalls, 1)
+        XCTAssertEqual(sender.textCalls.count, 1)
+        XCTAssertFalse(sender.textCalls[0].text.contains("25.033000"))
+        XCTAssertTrue(sender.photoCalls.isEmpty)
+        XCTAssertTrue(sender.locationCalls.isEmpty)
+        XCTAssertEqual(sender.callOrder, [.text])
+    }
+
+    func testPhotoUploadFailureDoesNotSendNativeMapAndCleansFile() throws {
+        try configure()
+        settings.attachMacLocation = true
+        camera.result = .success(photoURL)
+        location.result = .success(.init(latitude: 25.033,
+                                         longitude: 121.5654,
+                                         horizontalAccuracy: 18,
+                                         timestamp: Date(timeIntervalSince1970: 100)))
+        sender.photoResult = .failure(.transport)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertTrue(sender.locationCalls.isEmpty)
+        XCTAssertEqual(sender.callOrder, [.photo])
+        XCTAssertEqual(remover.calls, [photoURL])
+    }
+
+    func testNativeMapFailureReportsWithoutResendingPhoto() throws {
+        try configure()
+        settings.attachMacLocation = true
+        camera.result = .success(photoURL)
+        location.result = .success(.init(latitude: 25.033,
+                                         longitude: 121.5654,
+                                         horizontalAccuracy: 18,
+                                         timestamp: Date(timeIntervalSince1970: 100)))
+        sender.locationResult = .failure(.transport)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(sender.photoCalls.count, 1)
+        XCTAssertEqual(sender.locationCalls.count, 1)
+        XCTAssertEqual(sender.callOrder, [.photo, .location])
+        XCTAssertEqual(reporter.categories.last, "telegram-location")
+        XCTAssertEqual(reporter.messages.last, t("telegram_location_send_error"))
+    }
+
+    func testLocatedTestNotificationUsesOneTimestampForCaptionAndLocation() throws {
+        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
+        settings.attachMacLocation = true
+        camera.result = .success(photoURL)
+        location.result = .success(.init(latitude: 25.033,
+                                         longitude: 121.5654,
+                                         horizontalAccuracy: 18,
+                                         timestamp: Date()))
+        let formatter = RecordingTelegramMessageFormatter()
+        service = TelegramNotificationService(
+            settings: settings,
+            sender: sender,
+            camera: camera,
+            location: location,
+            removeFile: remover.remove,
+            reporter: reporter,
+            formatter: formatter
+        )
+        var result: Result<Void, Error>?
+
+        service.sendTest(hostName: "Fred-Mac") { result = $0 }
+
+        assertSuccess(result)
+        XCTAssertEqual(formatter.photoCaptionContexts.count, 1)
+        XCTAssertEqual(location.requestedDates, [formatter.photoCaptionContexts[0].timestamp])
     }
 
     func testTestNotificationUsesPhotoSetting() throws {
@@ -313,8 +444,10 @@ final class TelegramNotificationServiceTests: XCTestCase {
     private func assertNoCameraOrNetworkCalls(file: StaticString = #filePath,
                                               line: UInt = #line) {
         XCTAssertEqual(camera.captureCalls, 0, file: file, line: line)
+        XCTAssertTrue(location.requestedDates.isEmpty, file: file, line: line)
         XCTAssertEqual(sender.textCalls.count, 0, file: file, line: line)
         XCTAssertEqual(sender.photoCalls.count, 0, file: file, line: line)
+        XCTAssertEqual(sender.locationCalls.count, 0, file: file, line: line)
     }
 
     private func assertSuccess(_ result: Result<Void, Error>?,
@@ -325,6 +458,22 @@ final class TelegramNotificationServiceTests: XCTestCase {
                            file: file,
                            line: line)
         }
+    }
+}
+
+private final class RecordingTelegramMessageFormatter: TelegramMessageFormatting {
+    private(set) var messageContexts: [TelegramEventContext] = []
+    private(set) var photoCaptionContexts: [TelegramEventContext] = []
+
+    func message(for context: TelegramEventContext) -> String {
+        messageContexts.append(context)
+        return "message"
+    }
+
+    func photoCaption(for context: TelegramEventContext,
+                      location: TelegramLocation?) -> String {
+        photoCaptionContexts.append(context)
+        return "caption"
     }
 }
 

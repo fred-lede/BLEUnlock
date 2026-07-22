@@ -82,3 +82,5 @@
 "telegram_message_accuracy" = "Posisjonsnøyaktighet";
 "telegram_message_map" = "Kart";
 "telegram_location_unavailable" = "Posisjonen på opptakstidspunktet er ikke tilgjengelig.";
+"telegram_location_error" = "Kunne ikke hente Mac-posisjonen.";
+"telegram_location_send_error" = "Bildet ble sendt, men kartposisjonen kunne ikke sendes til Telegram.";

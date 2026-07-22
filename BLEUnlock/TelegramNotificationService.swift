@@ -194,6 +194,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
     private let settings: TelegramSettings
     private let sender: TelegramSending
     private let camera: PhotoCapturing
+    private let location: MacLocationProviding
     private let removeFile: (URL) throws -> Void
     private let reporter: FailureReporting
     private let formatter: TelegramMessageFormatting
@@ -201,6 +202,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
     init(settings: TelegramSettings,
          sender: TelegramSending,
          camera: PhotoCapturing,
+         location: MacLocationProviding = CoreMacLocationProvider(),
          removeFile: @escaping (URL) throws -> Void = {
              try FileManager.default.removeItem(at: $0)
          },
@@ -209,6 +211,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
         self.settings = settings
         self.sender = sender
         self.camera = camera
+        self.location = location
         self.removeFile = removeFile
         self.reporter = reporter
         self.formatter = formatter
@@ -229,11 +232,20 @@ final class TelegramNotificationService: TelegramNotificationHandling {
             return
         }
 
-        let message = formatter.message(for: context)
         if context.event == .intruded && settings.takePhotoOnIntruded {
-            sendPhotoOrFallback(credentials: credentials, message: message, completion: nil)
+            if settings.attachMacLocation {
+                sendLocatedPhotoOrFallback(credentials: credentials,
+                                           context: context,
+                                           completion: nil)
+            } else {
+                sendPhotoOrFallback(credentials: credentials,
+                                    message: formatter.message(for: context),
+                                    completion: nil)
+            }
         } else {
-            sendText(credentials: credentials, message: message, completion: nil)
+            sendText(credentials: credentials,
+                     message: formatter.message(for: context),
+                     completion: nil)
         }
     }
 
@@ -251,16 +263,88 @@ final class TelegramNotificationService: TelegramNotificationHandling {
             return
         }
 
-        let message = formatter.message(for: .init(event: .intruded,
-                                                    hostName: hostName,
-                                                    timestamp: Date(),
-                                                    rssi: nil))
+        let context = TelegramEventContext(event: .intruded,
+                                           hostName: hostName,
+                                           timestamp: Date(),
+                                           rssi: nil)
         if settings.takePhotoOnIntruded {
-            sendPhotoOrFallback(credentials: credentials,
-                                message: message,
-                                completion: completion)
+            if settings.attachMacLocation {
+                sendLocatedPhotoOrFallback(credentials: credentials,
+                                           context: context,
+                                           completion: completion)
+            } else {
+                sendPhotoOrFallback(credentials: credentials,
+                                    message: formatter.message(for: context),
+                                    completion: completion)
+            }
         } else {
-            sendText(credentials: credentials, message: message, completion: completion)
+            sendText(credentials: credentials,
+                     message: formatter.message(for: context),
+                     completion: completion)
+        }
+    }
+
+    private func sendLocatedPhotoOrFallback(
+        credentials: TelegramCredentials,
+        context: TelegramEventContext,
+        completion: ((Result<Void, Error>) -> Void)?
+    ) {
+        let coordinator = PhotoLocationCoordinator(camera: camera, location: location)
+        coordinator.capture(capturedAt: context.timestamp) { [coordinator] outcome in
+            _ = coordinator
+            self.deliver(outcome,
+                         credentials: credentials,
+                         context: context,
+                         completion: completion)
+        }
+    }
+
+    private func deliver(
+        _ outcome: PhotoLocationOutcome,
+        credentials: TelegramCredentials,
+        context: TelegramEventContext,
+        completion: ((Result<Void, Error>) -> Void)?
+    ) {
+        switch outcome {
+        case .cameraFailure(let error):
+            reporter.report(category: "camera", message: error.localizedDescription)
+            completion?(.failure(error))
+            sendText(credentials: credentials,
+                     message: formatter.message(for: context),
+                     completion: nil)
+        case .photo(let photoURL, let positionResult):
+            let position = try? positionResult.get()
+            if case .failure = positionResult {
+                reporter.report(category: "location", message: t("telegram_location_error"))
+            }
+            let caption = formatter.photoCaption(for: context, location: position)
+            sender.sendPhoto(credentials: credentials,
+                             photoURL: photoURL,
+                             caption: caption) { [sender, removeFile, reporter] result in
+                do {
+                    try removeFile(photoURL)
+                } catch {
+                    reporter.report(category: "file",
+                                    message: t("telegram_error_file_cleanup"))
+                }
+                switch (result, position) {
+                case (.success, .some(let position)):
+                    sender.sendLocation(credentials: credentials,
+                                        location: position) { mapResult in
+                        if case .failure = mapResult {
+                            reporter.report(category: "telegram-location",
+                                            message: t("telegram_location_send_error"))
+                        }
+                        completion?(mapResult.mapError { $0 as Error })
+                    }
+                default:
+                    if case .failure(let error) = result {
+                        reporter.report(category: "telegram",
+                                        message: error.localizedDescription)
+                    }
+                    completion?(result.mapError { $0 as Error })
+                }
+            }
         }
     }
 

@@ -1,6 +1,12 @@
 import Foundation
 @testable import BLEUnlock
 
+enum TelegramCallKind: Equatable {
+    case text
+    case photo
+    case location
+}
+
 final class MemorySecretStore: SecretStoring {
     var values: [String: String] = [:]
     func string(for account: String) throws -> String? { values[account] }
@@ -54,10 +60,12 @@ final class RecordingTelegramSender: TelegramSending {
     private(set) var textCalls: [TextCall] = []
     private(set) var photoCalls: [PhotoCall] = []
     private(set) var locationCalls: [LocationCall] = []
+    private(set) var callOrder: [TelegramCallKind] = []
 
     func sendText(credentials: TelegramCredentials,
                   text: String,
                   completion: @escaping (Result<Void, TelegramError>) -> Void) {
+        callOrder.append(.text)
         textCalls.append(.init(credentials: credentials, text: text))
         completion(textResult)
     }
@@ -66,6 +74,7 @@ final class RecordingTelegramSender: TelegramSending {
                    photoURL: URL,
                    caption: String,
                    completion: @escaping (Result<Void, TelegramError>) -> Void) {
+        callOrder.append(.photo)
         photoCalls.append(.init(credentials: credentials,
                                 photoURL: photoURL,
                                 caption: caption))
@@ -75,6 +84,7 @@ final class RecordingTelegramSender: TelegramSending {
     func sendLocation(credentials: TelegramCredentials,
                       location: TelegramLocation,
                       completion: @escaping (Result<Void, TelegramError>) -> Void) {
+        callOrder.append(.location)
         locationCalls.append(.init(credentials: credentials, location: location))
         completion(locationResult)
     }
@@ -87,6 +97,30 @@ final class StubPhotoCapturer: PhotoCapturing {
     func capture(completion: @escaping (Result<URL, CameraCaptureError>) -> Void) {
         captureCalls += 1
         completion(result)
+    }
+}
+
+final class StubLocationRequestToken: LocationRequestCancelling {
+    private(set) var cancelCalls = 0
+
+    func cancel() {
+        cancelCalls += 1
+    }
+}
+
+final class StubMacLocationProvider: MacLocationProviding {
+    var result: Result<TelegramLocation, MacLocationError> = .failure(.unavailable)
+    private(set) var requestedDates: [Date] = []
+    let token = StubLocationRequestToken()
+
+    @discardableResult
+    func requestLocation(
+        capturedAt: Date,
+        completion: @escaping (Result<TelegramLocation, MacLocationError>) -> Void
+    ) -> LocationRequestCancelling {
+        requestedDates.append(capturedAt)
+        completion(result)
+        return token
     }
 }
 
