@@ -47,6 +47,7 @@
 "telegram_event_unlocked" = "Unlocked by BLEUnlock";
 "telegram_event_intruded" = "Unlocked manually";
 "telegram_take_photo" = "Attach a photo for manual unlock";
+"telegram_attach_mac_location" = "Attach Mac Location";
 "telegram_status_not_configured" = "Not configured";
 "telegram_status_enabled" = "Enabled";
 "telegram_status_disabled" = "Disabled";

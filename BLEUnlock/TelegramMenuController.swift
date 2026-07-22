@@ -20,10 +20,12 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
     let eventItems: [TelegramEvent: NSMenuItem]
     let photoItem: NSMenuItem
     let privacyItem: NSMenuItem
+    let locationItem: NSMenuItem
 
     private let settings: TelegramSettings
     private let service: TelegramNotificationHandling
     private let dialogs: TelegramDialogPresenting
+    private let locationAuthorization: LocationAuthorizationRequesting
     private let hostName: () -> String
     private let serviceQueue = DispatchQueue(label: "jp.sone.BLEUnlock.telegram.menu",
                                              qos: .utility)
@@ -31,10 +33,12 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
     init(settings: TelegramSettings,
          service: TelegramNotificationHandling,
          dialogs: TelegramDialogPresenting,
+         locationAuthorization: LocationAuthorizationRequesting = CoreMacLocationProvider(),
          hostName: @escaping () -> String = { Host.current().localizedName ?? "Mac" }) {
         self.settings = settings
         self.service = service
         self.dialogs = dialogs
+        self.locationAuthorization = locationAuthorization
         self.hostName = hostName
 
         enableItem = NSMenuItem(title: t("telegram_enable"),
@@ -70,6 +74,9 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
                                  action: nil,
                                  keyEquivalent: "")
         privacyItem.isEnabled = false
+        locationItem = NSMenuItem(title: t("telegram_attach_mac_location"),
+                                  action: #selector(toggleLocation(_:)),
+                                  keyEquivalent: "")
         statusItem = NSMenuItem(title: t("telegram_status_not_configured"),
                                 action: nil,
                                 keyEquivalent: "")
@@ -82,6 +89,7 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
         testItem.target = self
         eventItems.values.forEach { $0.target = self }
         photoItem.target = self
+        locationItem.target = self
 
         menu.autoenablesItems = false
         menu.delegate = self
@@ -92,6 +100,7 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
         menu.addItem(eventsItem)
         menu.addItem(photoItem)
         menu.addItem(privacyItem)
+        menu.addItem(locationItem)
         menu.addItem(.separator())
         menu.addItem(statusItem)
     }
@@ -105,6 +114,8 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
             item.state = settings.isEventEnabled(event) ? .on : .off
         }
         photoItem.state = settings.takePhotoOnIntruded ? .on : .off
+        locationItem.state = settings.attachMacLocation ? .on : .off
+        locationItem.isEnabled = settings.takePhotoOnIntruded
 
         if !configured {
             statusItem.title = t("telegram_status_not_configured")
@@ -132,7 +143,19 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
 
     @objc internal func togglePhoto(_ item: NSMenuItem) {
         settings.takePhotoOnIntruded.toggle()
-        item.state = settings.takePhotoOnIntruded ? .on : .off
+        menuWillOpen(menu)
+    }
+
+    @objc internal func toggleLocation(_ item: NSMenuItem) {
+        guard settings.takePhotoOnIntruded else {
+            menuWillOpen(menu)
+            return
+        }
+        settings.attachMacLocation.toggle()
+        if settings.attachMacLocation {
+            locationAuthorization.requestAuthorization()
+        }
+        menuWillOpen(menu)
     }
 
     @objc internal func configure() {

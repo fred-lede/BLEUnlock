@@ -47,6 +47,7 @@
 "telegram_event_unlocked" = "已由 BLEUnlock 解鎖";
 "telegram_event_intruded" = "已手動解鎖";
 "telegram_take_photo" = "手動解鎖時附加照片";
+"telegram_attach_mac_location" = "附加 Mac 位置";
 "telegram_status_not_configured" = "尚未設定";
 "telegram_status_enabled" = "已啟用";
 "telegram_status_disabled" = "已停用";

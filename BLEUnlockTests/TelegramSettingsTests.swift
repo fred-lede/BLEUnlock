@@ -49,6 +49,14 @@ final class TelegramSettingsTests: XCTestCase {
                        TelegramCredentials(token: "token-123", chatID: "987654"))
     }
 
+    func testAttachMacLocationDefaultsOffAndPersists() {
+        let settings = TelegramSettings(defaults: defaults, secrets: secrets)
+
+        XCTAssertFalse(settings.attachMacLocation)
+        settings.attachMacLocation = true
+        XCTAssertTrue(settings.attachMacLocation)
+    }
+
     func testBlankOrNilReplacementPreservesStoredToken() throws {
         let settings = TelegramSettings(defaults: defaults, secrets: secrets)
         try settings.saveCredentials(replacementToken: "original", chatID: "old-chat")

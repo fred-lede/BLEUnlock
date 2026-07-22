@@ -47,6 +47,7 @@
 "telegram_event_unlocked" = "Låst opp av BLEUnlock";
 "telegram_event_intruded" = "Låst opp manuelt";
 "telegram_take_photo" = "Legg ved et bilde ved manuell opplåsing";
+"telegram_attach_mac_location" = "Legg ved Mac-posisjon";
 "telegram_status_not_configured" = "Ikke konfigurert";
 "telegram_status_enabled" = "Aktivert";
 "telegram_status_disabled" = "Deaktivert";

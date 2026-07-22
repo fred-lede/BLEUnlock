@@ -10,6 +10,7 @@ final class TelegramSettings {
     private enum Key {
         static let enabled = "telegram.enabled"
         static let takePhoto = "telegram.takePhotoOnIntruded"
+        static let attachMacLocation = "telegram.attachMacLocation"
         static let token = "botToken"
         static let chatID = "chatID"
     }
@@ -30,6 +31,11 @@ final class TelegramSettings {
     var takePhotoOnIntruded: Bool {
         get { defaults.object(forKey: Key.takePhoto) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Key.takePhoto) }
+    }
+
+    var attachMacLocation: Bool {
+        get { defaults.object(forKey: Key.attachMacLocation) as? Bool ?? false }
+        set { defaults.set(newValue, forKey: Key.attachMacLocation) }
     }
 
     func isEventEnabled(_ event: TelegramEvent) -> Bool {

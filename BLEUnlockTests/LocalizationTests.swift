@@ -7,7 +7,7 @@ final class LocalizationTests: XCTestCase {
         "telegram", "telegram_enable", "telegram_configure", "telegram_test",
         "telegram_events", "telegram_event_away", "telegram_event_lost",
         "telegram_event_unlocked", "telegram_event_intruded",
-        "telegram_take_photo", "telegram_status_not_configured",
+        "telegram_take_photo", "telegram_attach_mac_location", "telegram_status_not_configured",
         "telegram_status_enabled", "telegram_status_disabled",
         "telegram_bot_token", "telegram_chat_id", "telegram_save",
         "telegram_setup_help", "telegram_test_success", "telegram_test_failed",
