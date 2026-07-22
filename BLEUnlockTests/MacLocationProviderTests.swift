@@ -1,4 +1,5 @@
 import CoreLocation
+import Foundation
 import XCTest
 @testable import BLEUnlock
 
@@ -55,6 +56,66 @@ final class MacLocationProviderTests: XCTestCase {
         XCTAssertEqual(result, .failure(.invalidLocation))
     }
 
+    func testRejectsInvalidCoordinates() {
+        let capturedAt = Date(timeIntervalSince1970: 1_000)
+        let provider = makeProvider()
+        var result: Result<TelegramLocation, MacLocationError>?
+
+        _ = provider.requestLocation(capturedAt: capturedAt) { result = $0 }
+        client.sendAuthorization(.authorizedAlways)
+        client.sendLocations([location(latitude: 100,
+                                      longitude: 121,
+                                      horizontalAccuracy: 10,
+                                      timestamp: capturedAt)])
+
+        XCTAssertEqual(result, .failure(.invalidLocation))
+    }
+
+    func testRejectsNegativeHorizontalAccuracy() {
+        let capturedAt = Date(timeIntervalSince1970: 1_000)
+        let provider = makeProvider()
+        var result: Result<TelegramLocation, MacLocationError>?
+
+        _ = provider.requestLocation(capturedAt: capturedAt) { result = $0 }
+        client.sendAuthorization(.authorizedAlways)
+        client.sendLocations([location(horizontalAccuracy: -1, timestamp: capturedAt)])
+
+        XCTAssertEqual(result, .failure(.invalidLocation))
+    }
+
+    func testRejectsLocationMoreThanSixtySecondsAfterCapture() {
+        let capturedAt = Date(timeIntervalSince1970: 1_000)
+        let provider = makeProvider()
+        var result: Result<TelegramLocation, MacLocationError>?
+
+        _ = provider.requestLocation(capturedAt: capturedAt) { result = $0 }
+        client.sendAuthorization(.authorizedAlways)
+        client.sendLocations([location(timestamp: capturedAt.addingTimeInterval(61))])
+
+        XCTAssertEqual(result, .failure(.invalidLocation))
+    }
+
+    func testAcceptsLocationsExactlySixtySecondsFromCapture() {
+        let capturedAt = Date(timeIntervalSince1970: 1_000)
+
+        for offset in [-60.0, 60.0] {
+            client = RecordingCoreLocationClient()
+            scheduler = ControlledLocationTimeoutScheduler()
+            let provider = makeProvider()
+            var result: Result<TelegramLocation, MacLocationError>?
+            let timestamp = capturedAt.addingTimeInterval(offset)
+
+            _ = provider.requestLocation(capturedAt: capturedAt) { result = $0 }
+            client.sendAuthorization(.authorizedAlways)
+            client.sendLocations([location(timestamp: timestamp)])
+
+            XCTAssertEqual(result, .success(.init(latitude: 25.033,
+                                                   longitude: 121.5654,
+                                                   horizontalAccuracy: 18,
+                                                   timestamp: timestamp)))
+        }
+    }
+
     func testTimesOutAfterFiveSecondsAndIgnoresLateCallback() {
         let provider = makeProvider()
         var results: [Result<TelegramLocation, MacLocationError>] = []
@@ -66,6 +127,72 @@ final class MacLocationProviderTests: XCTestCase {
 
         XCTAssertEqual(results, [.failure(.timeout)])
         XCTAssertEqual(client.stopCalls, 1)
+    }
+
+    func testServicesDisabledCompletesOnceWithoutCreatingAClient() {
+        var makeClientCalls = 0
+        let provider = CoreMacLocationProvider(makeClient: {
+            makeClientCalls += 1
+            return self.client
+        },
+                                               servicesEnabled: { false },
+                                               scheduleTimeout: scheduler.schedule)
+        var results: [Result<TelegramLocation, MacLocationError>] = []
+
+        _ = provider.requestLocation(capturedAt: Date()) { results.append($0) }
+
+        XCTAssertEqual(results, [.failure(.servicesDisabled)])
+        XCTAssertEqual(makeClientCalls, 0)
+        XCTAssertEqual(scheduler.intervals, [])
+    }
+
+    func testClientErrorCompletesOnceAndStopsTheRequest() {
+        client.authorizationStatus = .authorizedAlways
+        let provider = makeProvider()
+        var results: [Result<TelegramLocation, MacLocationError>] = []
+
+        _ = provider.requestLocation(capturedAt: Date()) { results.append($0) }
+        client.send(error: NSError(domain: "test", code: 1))
+        client.send(error: NSError(domain: "test", code: 2))
+        client.sendLocations([freshLocation])
+
+        XCTAssertEqual(results, [.failure(.unavailable)])
+        XCTAssertEqual(client.stopCalls, 1)
+    }
+
+    func testNotDeterminedRequestsAuthorizationOnlyOnceForRepeatedCallbacks() {
+        let provider = makeProvider()
+
+        let token = provider.requestLocation(capturedAt: Date()) { _ in }
+        client.sendAuthorization(.notDetermined)
+        client.sendAuthorization(.notDetermined)
+
+        XCTAssertEqual(client.authorizationCalls, 1)
+        XCTAssertEqual(client.requestLocationCalls, 0)
+        token.cancel()
+    }
+
+    func testClientConstructionMovesToMainThreadWhenRequestedOffMain() {
+        client.authorizationStatus = .authorizedAlways
+        let clientCreated = expectation(description: "Client created")
+        let completed = expectation(description: "Request completed")
+        var madeClientOnMainThread = false
+        let provider = CoreMacLocationProvider(makeClient: {
+            madeClientOnMainThread = Thread.isMainThread
+            clientCreated.fulfill()
+            return self.client
+        },
+                                               servicesEnabled: { true },
+                                               scheduleTimeout: scheduler.schedule)
+
+        DispatchQueue.global().async {
+            _ = provider.requestLocation(capturedAt: Date()) { _ in completed.fulfill() }
+        }
+
+        wait(for: [clientCreated], timeout: 1)
+        XCTAssertTrue(madeClientOnMainThread)
+        client.send(error: NSError(domain: "test", code: 1))
+        wait(for: [completed], timeout: 1)
     }
 
     func testDeniedRestrictedAndCancelledRequestsCompleteWithoutCoordinates() {
@@ -87,11 +214,18 @@ final class MacLocationProviderTests: XCTestCase {
     }
 
     private var freshLocation: CLLocation {
-        CLLocation(coordinate: .init(latitude: 25.033, longitude: 121.5654),
+        location(timestamp: Date())
+    }
+
+    private func location(latitude: CLLocationDegrees = 25.033,
+                          longitude: CLLocationDegrees = 121.5654,
+                          horizontalAccuracy: CLLocationAccuracy = 18,
+                          timestamp: Date) -> CLLocation {
+        CLLocation(coordinate: .init(latitude: latitude, longitude: longitude),
                    altitude: 0,
-                   horizontalAccuracy: 18,
+                   horizontalAccuracy: horizontalAccuracy,
                    verticalAccuracy: -1,
-                   timestamp: Date())
+                   timestamp: timestamp)
     }
 
     private func assertAuthorization(_ status: CLAuthorizationStatus,
