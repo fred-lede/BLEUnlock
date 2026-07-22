@@ -42,6 +42,7 @@ final class ProximityMonitor {
     private var confirmation = ProximityConfirmation()
     private var timeoutCancellation: ProximityScheduledCancellation?
     private var burstCancellation: ProximityScheduledCancellation?
+    private var activeAttemptID: UUID?
 
     init(scheduler: ProximityScheduling = RunLoopProximityScheduler(),
          now: @escaping () -> TimeInterval = { Date().timeIntervalSince1970 },
@@ -95,9 +96,12 @@ final class ProximityMonitor {
 
     private func startTimers(allowsBurst: Bool) {
         stopTimers()
+        let attemptID = UUID()
+        activeAttemptID = attemptID
         timeoutCancellation = scheduler.schedule(after: confirmation.timeout,
                                                  repeats: false) { [weak self] in
-            guard let self else { return }
+            guard let self,
+                  self.activeAttemptID == attemptID else { return }
             self.handle(self.confirmation.expire(at: self.now()),
                         allowsBurst: false,
                         rssi: nil)
@@ -105,13 +109,16 @@ final class ProximityMonitor {
         if allowsBurst {
             burstCancellation = scheduler.schedule(after: 0.4,
                                                     repeats: true) { [weak self] in
-                self?.requestSample()
+                guard let self,
+                      self.activeAttemptID == attemptID else { return }
+                self.requestSample()
             }
             logger("Proximity burst sampling started")
         }
     }
 
     private func stopTimers() {
+        activeAttemptID = nil
         timeoutCancellation?.cancel()
         timeoutCancellation = nil
         if burstCancellation != nil {
