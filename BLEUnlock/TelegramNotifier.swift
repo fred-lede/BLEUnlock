@@ -13,6 +13,9 @@ protocol TelegramSending {
                    photoURL: URL,
                    caption: String,
                    completion: @escaping (Result<Void, TelegramError>) -> Void)
+    func sendLocation(credentials: TelegramCredentials,
+                      location: TelegramLocation,
+                      completion: @escaping (Result<Void, TelegramError>) -> Void)
 }
 
 enum TelegramError: LocalizedError, Equatable {
@@ -75,6 +78,24 @@ final class TelegramNotifier: TelegramSending {
                                        photoURL: photoURL,
                                        caption: caption,
                                        data: data)
+        perform(request, credentials: credentials, completion: completion)
+    }
+
+    func sendLocation(credentials: TelegramCredentials,
+                      location: TelegramLocation,
+                      completion: @escaping (Result<Void, TelegramError>) -> Void) {
+        guard let url = endpointURL(token: credentials.token, method: "sendLocation") else {
+            completion(.failure(.invalidRequest))
+            return
+        }
+        var request = URLRequest(url: url, timeoutInterval: 15)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = formEncoded([
+            ("chat_id", credentials.chatID),
+            ("latitude", String(location.latitude)),
+            ("longitude", String(location.longitude))
+        ])
         perform(request, credentials: credentials, completion: completion)
     }
 
