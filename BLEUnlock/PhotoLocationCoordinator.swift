@@ -41,7 +41,7 @@ final class PhotoLocationCoordinator {
                         completion: @escaping (PhotoLocationOutcome) -> Void) {
         var action: (() -> Void)?
         lock.lock()
-        if !didComplete {
+        if !didComplete, photo == nil {
             photo = result
             switch result {
             case .failure(let error):
@@ -64,7 +64,7 @@ final class PhotoLocationCoordinator {
                         completion: @escaping (PhotoLocationOutcome) -> Void) {
         var action: (() -> Void)?
         lock.lock()
-        if !didComplete {
+        if !didComplete, position == nil {
             position = result
             action = finishPhotoIfReady(completion: completion)
         }
