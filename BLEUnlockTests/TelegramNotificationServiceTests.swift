@@ -398,6 +398,18 @@ final class TelegramNotificationServiceTests: XCTestCase {
         XCTAssertEqual(delivery.messages, ["Denied", "Offline", "Denied after interval"])
     }
 
+    func testProductionAppWiresCoreLocationIntoTelegramMenuAndService() throws {
+        let repository = URL(fileURLWithPath: #file)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(contentsOf: repository.appendingPathComponent(
+            "BLEUnlock/AppDelegate.swift"
+        ))
+        XCTAssertTrue(source.contains("CoreMacLocationProvider"))
+        XCTAssertTrue(source.contains("location: macLocationProvider"))
+        XCTAssertTrue(source.contains("locationAuthorization: macLocationProvider"))
+    }
+
     func testPhotoCaptionIncludesCoordinatesAccuracyAndEscapedAppleMapsLink() {
         let formatter = TelegramMessageFormatter()
         let context = TelegramEventContext(event: .intruded,

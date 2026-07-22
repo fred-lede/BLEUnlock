@@ -33,16 +33,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     let telegramSettings = TelegramSettings(
         secrets: KeychainStore(service: "jp.sone.BLEUnlock.telegram")
     )
+    let macLocationProvider = CoreMacLocationProvider()
     lazy var telegramService: TelegramNotificationHandling = TelegramNotificationService(
         settings: telegramSettings,
         sender: TelegramNotifier(transport: URLSessionTransport()),
         camera: CameraCapture(),
+        location: macLocationProvider,
         reporter: RateLimitedFailureReporter()
     )
     lazy var telegramMenuController = TelegramMenuController(
         settings: telegramSettings,
         service: telegramService,
-        dialogs: AppKitTelegramDialogPresenter()
+        dialogs: AppKitTelegramDialogPresenter(),
+        locationAuthorization: macLocationProvider
     )
     private let telegramEventQueue = DispatchQueue(
         label: "jp.sone.BLEUnlock.telegram.events",
