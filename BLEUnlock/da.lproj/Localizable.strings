@@ -82,3 +82,5 @@
 "telegram_message_accuracy" = "Placeringens nøjagtighed";
 "telegram_message_map" = "Kort";
 "telegram_location_unavailable" = "Placeringen på optagelsestidspunktet kunne ikke hentes.";
+"telegram_location_error" = "Mac-computerens placering kunne ikke hentes.";
+"telegram_location_send_error" = "Billedet blev sendt, men Telegram-kortplaceringen kunne ikke sendes.";

@@ -82,3 +82,5 @@
 "telegram_message_accuracy" = "Standortgenauigkeit";
 "telegram_message_map" = "Karte";
 "telegram_location_unavailable" = "Der Standort zum Aufnahmezeitpunkt ist nicht verfügbar.";
+"telegram_location_error" = "Der Mac-Standort konnte nicht ermittelt werden.";
+"telegram_location_send_error" = "Das Foto wurde gesendet, aber der Telegram-Kartenstandort konnte nicht gesendet werden.";

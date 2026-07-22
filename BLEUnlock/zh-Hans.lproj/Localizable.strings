@@ -82,3 +82,5 @@
 "telegram_message_accuracy" = "定位精度";
 "telegram_message_map" = "地图";
 "telegram_location_unavailable" = "无法获取拍照时的位置。";
+"telegram_location_error" = "无法获取 Mac 位置。";
+"telegram_location_send_error" = "照片已发送，但无法发送 Telegram 地图位置。";

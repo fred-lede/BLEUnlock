@@ -23,7 +23,8 @@ final class LocalizationTests: XCTestCase {
         "telegram_error_keychain_status", "telegram_failure_notification_subtitle",
         "telegram_message_time", "telegram_message_rssi",
         "telegram_message_coordinates", "telegram_message_accuracy",
-        "telegram_message_map", "telegram_location_unavailable"
+        "telegram_message_map", "telegram_location_unavailable",
+        "telegram_location_error", "telegram_location_send_error"
     ]
 
     private let localizationDirectories = [

@@ -82,3 +82,5 @@
 "telegram_message_accuracy" = "Konum Doğruluğu";
 "telegram_message_map" = "Harita";
 "telegram_location_unavailable" = "Fotoğraf çekildiği andaki konum alınamadı.";
+"telegram_location_error" = "Mac konumu alınamadı.";
+"telegram_location_send_error" = "Fotoğraf gönderildi ancak Telegram harita konumu gönderilemedi.";

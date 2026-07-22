@@ -82,3 +82,5 @@
 "telegram_message_accuracy" = "Platsnoggrannhet";
 "telegram_message_map" = "Karta";
 "telegram_location_unavailable" = "Platsen vid fotograferingstillfället är inte tillgänglig.";
+"telegram_location_error" = "Det gick inte att hämta Mac-datorns plats.";
+"telegram_location_send_error" = "Fotot skickades, men kartplatsen kunde inte skickas till Telegram.";

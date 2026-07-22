@@ -82,3 +82,5 @@
 "telegram_message_accuracy" = "位置情報の精度";
 "telegram_message_map" = "地図";
 "telegram_location_unavailable" = "撮影時の位置情報を取得できませんでした。";
+"telegram_location_error" = "Macの位置情報を取得できませんでした。";
+"telegram_location_send_error" = "写真は送信されましたが、Telegramの地図位置情報を送信できませんでした。";
