@@ -78,3 +78,7 @@
 "telegram_failure_notification_subtitle" = "Telegram 通知失败";
 "telegram_message_time" = "时间";
 "telegram_message_rssi" = "RSSI";
+"telegram_message_coordinates" = "GPS 坐标";
+"telegram_message_accuracy" = "定位精度";
+"telegram_message_map" = "地图";
+"telegram_location_unavailable" = "无法获取拍照时的位置。";
