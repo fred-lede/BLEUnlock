@@ -61,6 +61,34 @@ final class PhotoLocationCoordinatorTests: XCTestCase {
         XCTAssertEqual(outcomes, [.cameraFailure(.captureFailed)])
     }
 
+    func testDuplicatePhotoFailureDoesNotReplaceFirstPhotoSuccessBeforeLocationArrives() {
+        var outcomes: [PhotoLocationOutcome] = []
+        coordinator.capture(capturedAt: capturedAt) { outcomes.append($0) }
+
+        camera.complete(.success(photoURL))
+        camera.complete(.failure(.captureFailed))
+
+        XCTAssertTrue(outcomes.isEmpty)
+        XCTAssertEqual(location.token.cancelCalls, 0)
+
+        location.complete(.success(validLocation))
+
+        XCTAssertEqual(outcomes, [.photo(photoURL, .success(validLocation))])
+        XCTAssertEqual(location.token.cancelCalls, 0)
+    }
+
+    func testDuplicateLocationSuccessDoesNotReplaceFirstFailureBeforePhotoArrives() {
+        var outcomes: [PhotoLocationOutcome] = []
+        coordinator.capture(capturedAt: capturedAt) { outcomes.append($0) }
+
+        location.complete(.failure(.timeout))
+        location.complete(.success(validLocation))
+        camera.complete(.success(photoURL))
+
+        XCTAssertEqual(outcomes, [.photo(photoURL, .failure(.timeout))])
+        XCTAssertEqual(location.token.cancelCalls, 0)
+    }
+
     func testSynchronousCallbacksCompleteExactlyOnce() {
         let immediateLocation = ImmediateMacLocationProvider(result: .success(validLocation))
         let immediateCamera = ImmediatePhotoCapturer(result: .success(photoURL))
