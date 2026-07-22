@@ -3,6 +3,35 @@ import XCTest
 @testable import BLEUnlock
 
 final class ProximityMonitorTests: XCTestCase {
+    func testUnrelatedPhotoSettingDoesNotChangeConfirmationSequence() {
+        func run(photoEnabled: Bool) -> Int {
+            let defaults = UserDefaults.standard
+            let key = "telegram.takePhotoOnIntruded"
+            let previous = defaults.object(forKey: key)
+            defer {
+                if let previous = previous {
+                    defaults.set(previous, forKey: key)
+                } else {
+                    defaults.removeObject(forKey: key)
+                }
+            }
+            defaults.set(photoEnabled, forKey: key)
+
+            let fixture = Fixture()
+            fixture.monitor.receive(rssi: -54,
+                                    unlockThreshold: -55,
+                                    allowsBurst: true)
+            fixture.now = 0.4
+            fixture.monitor.receive(rssi: -55,
+                                    unlockThreshold: -55,
+                                    allowsBurst: true)
+            return fixture.confirmations
+        }
+
+        XCTAssertEqual(run(photoEnabled: false), 1)
+        XCTAssertEqual(run(photoEnabled: true), 1)
+    }
+
     func testCandidateStartsTimeoutAndNormalModeBurst() {
         let fixture = Fixture()
 

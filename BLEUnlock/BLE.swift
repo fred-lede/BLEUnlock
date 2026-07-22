@@ -167,6 +167,14 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     var latestN: Int = 5
     var activeModeTimer : Timer? = nil
     var connectionTimer : Timer? = nil
+    private lazy var proximityMonitor = ProximityMonitor(
+        requestSample: { [weak self] in
+            self?.requestBurstRSSI()
+        },
+        onConfirmed: { [weak self] in
+            self?.confirmMonitoredDeviceClose()
+        }
+    )
 
     func scanForPeripherals() {
         guard !centralMgr.isScanning else { return }
@@ -187,6 +195,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     }
 
     func setPassiveMode(_ mode: Bool) {
+        proximityMonitor.reset(reason: "passive mode changed")
         passiveMode = mode
         if passiveMode {
             activeModeTimer?.invalidate()
@@ -199,6 +208,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     }
 
     func startMonitor(uuid: UUID) {
+        proximityMonitor.reset(reason: "monitored device changed")
         if let p = monitoredPeripheral {
             centralMgr.cancelPeripheralConnection(p)
         }
@@ -217,6 +227,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         signalTimer = Timer.scheduledTimer(withTimeInterval: signalTimeout, repeats: false, block: { _ in
             print("Device is lost")
             self.delegate?.updateRSSI(rssi: nil, active: false)
+            self.proximityMonitor.reset(reason: "signal lost")
             if self.presence {
                 self.presence = false
                 self.delegate?.updatePresence(presence: self.presence, reason: "lost")
@@ -237,6 +248,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
             powerWarn = false
         case .poweredOff:
             print("Bluetooth powered off")
+            proximityMonitor.reset(reason: "Bluetooth powered off")
             presence = false
             signalTimer?.invalidate()
             signalTimer = nil
@@ -260,13 +272,32 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         return Int(mean)
     }
 
+    private func requestBurstRSSI() {
+        guard !passiveMode, let peripheral = monitoredPeripheral else { return }
+        if peripheral.state == .connected {
+            peripheral.readRSSI()
+        } else {
+            connectMonitoredPeripheral()
+        }
+    }
+
+    private func confirmMonitoredDeviceClose() {
+        guard !presence else { return }
+        print("Device is close")
+        presence = true
+        delegate?.updatePresence(presence: true, reason: "close")
+        latestRSSIs.removeAll()
+    }
+
     func updateMonitoredPeripheral(_ rssi: Int) {
         // print(String(format: "rssi: %d", rssi))
-        if rssi >= (unlockRSSI == UNLOCK_DISABLED ? lockRSSI : unlockRSSI) && !presence {
-            print("Device is close")
-            presence = true
-            delegate?.updatePresence(presence: presence, reason: "close")
-            latestRSSIs.removeAll() // Avoid bouncing
+        if !presence {
+            let effectiveUnlockRSSI = unlockRSSI == UNLOCK_DISABLED
+                ? lockRSSI
+                : unlockRSSI
+            proximityMonitor.receive(rssi: rssi,
+                                     unlockThreshold: effectiveUnlockRSSI,
+                                     allowsBurst: !passiveMode)
         }
 
         let estimatedRSSI = getEstimatedRSSI(rssi: rssi)
@@ -281,6 +312,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         } else if presence && proximityTimer == nil {
             proximityTimer = Timer.scheduledTimer(withTimeInterval: proximityTimeout, repeats: false, block: { _ in
                 print("Device is away")
+                self.proximityMonitor.reset(reason: "device away")
                 self.presence = false
                 self.delegate?.updatePresence(presence: self.presence, reason: "away")
                 self.proximityTimer = nil
