@@ -68,7 +68,7 @@ brew install bleunlock
 程式會開始掃描附近的 BLE 裝置。
 選取你的裝置後，設定即完成！
 
-對於受支援的 Apple 裝置，當使用者命名與偵測到的硬體型號皆可取得時，BLEUnlock 會將兩者合併顯示，例如 `Fred's iPhone (iPhone 16 Pro Max)`。若只有 `iPhone` 或 `iPad` 這類通用名稱，BLEUnlock 會改為顯示偵測到的型號。
+對於受支援的 Apple 裝置，當使用者指定的裝置名稱與偵測到的硬體型號皆可取得時，BLEUnlock 會將兩者合併顯示，例如 `Fred's iPhone (iPhone 16 Pro Max)`。若只有 `iPhone` 或 `iPad` 這類通用名稱，BLEUnlock 會改為顯示偵測到的型號。
 
 ## Telegram 通知
 
@@ -80,7 +80,7 @@ Telegram 通知是選用功能；在設定並啟用前會維持停用：
 4. 傳送測試通知、選擇事件開關，然後啟用 Telegram。
 5. 若啟用照片警示，macOS 詢問時請允許相機存取權。
 
-核准的事件預設值為 `away`、`lost`、`intruded` 開啟，`unlocked` 關閉。Telegram 本身預設為停用。`intruded` 的拍照預設為開啟；只有 `intruded` 事件可附加照片，其他事件通知皆只有文字。若拒絕相機權限或拍照失敗，`intruded` 警示仍會以純文字送出。每張暫存的入侵照片都會在每次傳送嘗試後刪除，不論該次傳送成功或失敗。
+事件的預設設定為 `away`、`lost`、`intruded` 開啟，`unlocked` 關閉。Telegram 本身預設為停用。`intruded` 的拍照預設為開啟；只有 `intruded` 事件可附加照片，其他事件通知皆只有文字。若拒絕相機權限或拍照失敗，`intruded` 警示仍會以純文字送出。每張暫存的入侵照片都會在每次傳送嘗試後刪除，不論該次傳送成功或失敗。
 
 若為照片警示啟用可選的 Mac 定位功能，照片說明文字會包含座標、精確度與 Apple 地圖連結，之後會再傳送一則原生 Telegram 位置訊息。若定位資訊無法取得，照片仍會送出，並帶有定位無法使用的說明文字；不會傳送地圖訊息。
 
