@@ -86,8 +86,7 @@ final class LocalizationTests: XCTestCase {
             "nb": "BLEUnlock henter posisjonen til denne Macen på opptakstidspunktet og legger ved koordinater og kart i Telegram-sikkerhetsvarslet.",
             "sv": "BLEUnlock hämtar den här Mac-datorns plats när fotot tas och bifogar koordinater och karta till Telegram-säkerhetsnotisen.",
             "tr": "BLEUnlock fotoğraf çekildiğinde bu Mac'in konumunu alır ve koordinatlarla haritayı Telegram güvenlik bildirimine ekler.",
-            "zh-Hans": "BLEUnlock 获取这台 Mac 拍照时的位置，并将坐标和地图附加到 Telegram 安全通知。",
-            "zh-Hant": "BLEUnlock 取得這部 Mac 拍照當時的位置，並將座標與地圖附加到 Telegram 安全通知。"
+            "zh-Hans": "BLEUnlock 获取这台 Mac 拍照时的位置，并将坐标和地图附加到 Telegram 安全通知。"
         ]
 
         for name in localizationDirectories {
