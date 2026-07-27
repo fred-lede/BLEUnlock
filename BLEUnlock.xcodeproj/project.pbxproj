@@ -12,6 +12,7 @@
 		7E1000503000000000000001 /* ProximityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000513000000000000001 /* ProximityMonitor.swift */; };
 		7E10004E3000000000000001 /* ProximityConfirmationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10004F3000000000000001 /* ProximityConfirmationTests.swift */; };
 		7E1000523000000000000001 /* ProximityMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000533000000000000001 /* ProximityMonitorTests.swift */; };
+		7E1000433000000000000001 /* ProximityRSSIGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000423000000000000001 /* ProximityRSSIGateTests.swift */; };
 		3D2CF85B255102B300157996 /* MediaRemote.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D2CF85A255102B300157996 /* MediaRemote.framework */; };
 		3D2FCF08226C99CB007A06E7 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3D2FCF07226C99CB007A06E7 /* Images.xcassets */; };
 		3D4EE4112279E55A00AF9E93 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 3D4EE4102279E55A00AF9E93 /* AppDelegate.m */; };
@@ -61,6 +62,7 @@
 		7E1000513000000000000001 /* ProximityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProximityMonitor.swift; sourceTree = "<group>"; };
 		7E10004F3000000000000001 /* ProximityConfirmationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProximityConfirmationTests.swift; sourceTree = "<group>"; };
 		7E1000533000000000000001 /* ProximityMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProximityMonitorTests.swift; sourceTree = "<group>"; };
+		7E1000423000000000000001 /* ProximityRSSIGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProximityRSSIGateTests.swift; sourceTree = "<group>"; };
 		3D2CF85A255102B300157996 /* MediaRemote.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaRemote.framework; path = ../../../../System/Library/PrivateFrameworks/MediaRemote.framework; sourceTree = "<group>"; };
 		3D2FCF07226C99CB007A06E7 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		3D43D0112765FCCB00D15991 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/AboutBox.strings; sourceTree = "<group>"; };
@@ -194,6 +196,7 @@
 			children = (
 				7E10004F3000000000000001 /* ProximityConfirmationTests.swift */,
 				7E1000533000000000000001 /* ProximityMonitorTests.swift */,
+				7E1000423000000000000001 /* ProximityRSSIGateTests.swift */,
 			);
 			path = BLEUnlockTests;
 			sourceTree = "<group>";
@@ -378,6 +381,7 @@
 			files = (
 				7E10004E3000000000000001 /* ProximityConfirmationTests.swift in Sources */,
 				7E1000523000000000000001 /* ProximityMonitorTests.swift in Sources */,
+				7E1000433000000000000001 /* ProximityRSSIGateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

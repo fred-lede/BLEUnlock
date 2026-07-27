@@ -3,6 +3,35 @@ import XCTest
 @testable import BLEUnlock
 
 final class ProximityMonitorTests: XCTestCase {
+    func testUnrelatedPhotoSettingDoesNotChangeConfirmationSequence() {
+        func run(photoEnabled: Bool) -> Int {
+            let defaults = UserDefaults.standard
+            let key = "telegram.takePhotoOnIntruded"
+            let previous = defaults.object(forKey: key)
+            defer {
+                if let previous = previous {
+                    defaults.set(previous, forKey: key)
+                } else {
+                    defaults.removeObject(forKey: key)
+                }
+            }
+            defaults.set(photoEnabled, forKey: key)
+
+            let fixture = Fixture()
+            fixture.monitor.receive(rssi: -54,
+                                    unlockThreshold: -55,
+                                    allowsBurst: true)
+            fixture.now = 0.4
+            fixture.monitor.receive(rssi: -55,
+                                    unlockThreshold: -55,
+                                    allowsBurst: true)
+            return fixture.confirmations
+        }
+
+        XCTAssertEqual(run(photoEnabled: false), 1)
+        XCTAssertEqual(run(photoEnabled: true), 1)
+    }
+
     func testCandidateStartsTimeoutAndNormalModeBurst() {
         let fixture = Fixture()
 
@@ -36,6 +65,19 @@ final class ProximityMonitorTests: XCTestCase {
         XCTAssertEqual(fixture.sampleRequests, 1)
     }
 
+    func testResetInvalidatesStaleBurstCallback() throws {
+        let fixture = Fixture()
+        fixture.monitor.receive(rssi: -60,
+                                unlockThreshold: -55,
+                                allowsBurst: true)
+        let burst = try XCTUnwrap(fixture.scheduler.entries.first { $0.repeats })
+
+        fixture.monitor.reset(reason: "device changed")
+        burst.action()
+
+        XCTAssertEqual(fixture.sampleRequests, 0)
+    }
+
     func testSecondQualifyingSampleConfirmsOnceAndCancelsTimers() {
         let fixture = Fixture()
         fixture.monitor.receive(rssi: -54,
@@ -49,6 +91,23 @@ final class ProximityMonitorTests: XCTestCase {
 
         XCTAssertEqual(fixture.confirmations, 1)
         XCTAssertTrue(fixture.scheduler.entries.allSatisfy(\.cancellation.isCancelled))
+    }
+
+    func testConfirmationInvalidatesStaleBurstCallback() throws {
+        let fixture = Fixture()
+        fixture.monitor.receive(rssi: -54,
+                                unlockThreshold: -55,
+                                allowsBurst: true)
+        let burst = try XCTUnwrap(fixture.scheduler.entries.first { $0.repeats })
+        fixture.now = 0.4
+        fixture.monitor.receive(rssi: -55,
+                                unlockThreshold: -55,
+                                allowsBurst: true)
+
+        burst.action()
+
+        XCTAssertEqual(fixture.confirmations, 1)
+        XCTAssertEqual(fixture.sampleRequests, 0)
     }
 
     func testTimeoutRejectsAndStopsBurst() throws {
@@ -65,6 +124,22 @@ final class ProximityMonitorTests: XCTestCase {
         XCTAssertTrue(fixture.messages.contains { $0.contains("timeout") })
     }
 
+    func testTimeoutInvalidatesStaleBurstCallback() throws {
+        let fixture = Fixture()
+        fixture.monitor.receive(rssi: -54,
+                                unlockThreshold: -55,
+                                allowsBurst: true)
+        let timeout = try XCTUnwrap(fixture.scheduler.entries.first { !$0.repeats })
+        let burst = try XCTUnwrap(fixture.scheduler.entries.first { $0.repeats })
+        fixture.now = 1.5
+        timeout.action()
+
+        burst.action()
+
+        XCTAssertEqual(fixture.confirmations, 0)
+        XCTAssertEqual(fixture.sampleRequests, 0)
+    }
+
     func testResetCancelsAttemptAndPreventsStaleTimeoutConfirmation() throws {
         let fixture = Fixture()
         fixture.monitor.receive(rssi: -54,
@@ -79,6 +154,75 @@ final class ProximityMonitorTests: XCTestCase {
         XCTAssertEqual(fixture.confirmations, 0)
         XCTAssertTrue(timeout.cancellation.isCancelled)
     }
+
+    func testOldTimeoutDoesNotAffectNewAttempt() throws {
+        let fixture = Fixture()
+        fixture.monitor.receive(rssi: -54,
+                                unlockThreshold: -55,
+                                allowsBurst: true)
+        let oldTimeout = try XCTUnwrap(fixture.scheduler.entries.first { !$0.repeats })
+
+        fixture.monitor.reset(reason: "device changed")
+        fixture.now = 0.4
+        fixture.monitor.receive(rssi: -54,
+                                unlockThreshold: -55,
+                                allowsBurst: true)
+        let newTimeout = try XCTUnwrap(fixture.scheduler.entries.last { !$0.repeats })
+        fixture.messages.removeAll()
+        fixture.now = 1.9
+
+        oldTimeout.action()
+
+        XCTAssertFalse(newTimeout.cancellation.isCancelled)
+        XCTAssertFalse(fixture.messages.contains { $0.contains("timeout") })
+    }
+
+    func testStaleCallbacksAfterConfirmationDoNotConfirmAgain() throws {
+        let fixture = Fixture()
+        fixture.monitor.receive(rssi: -54,
+                                unlockThreshold: -55,
+                                allowsBurst: true)
+        let timeout = try XCTUnwrap(fixture.scheduler.entries.first { !$0.repeats })
+        let burst = try XCTUnwrap(fixture.scheduler.entries.first { $0.repeats })
+        fixture.now = 0.4
+        fixture.monitor.receive(rssi: -55,
+                                unlockThreshold: -55,
+                                allowsBurst: true)
+        fixture.requestedSample = {
+            fixture.monitor.receive(rssi: -55,
+                                    unlockThreshold: -55,
+                                    allowsBurst: true)
+        }
+
+        fixture.now = 1.5
+        timeout.action()
+        burst.action()
+        burst.action()
+
+        XCTAssertEqual(fixture.confirmations, 1)
+    }
+
+    func testStaleCallbacksAfterTimeoutDoNotConfirm() throws {
+        let fixture = Fixture()
+        fixture.monitor.receive(rssi: -54,
+                                unlockThreshold: -55,
+                                allowsBurst: true)
+        let timeout = try XCTUnwrap(fixture.scheduler.entries.first { !$0.repeats })
+        let burst = try XCTUnwrap(fixture.scheduler.entries.first { $0.repeats })
+        fixture.now = 1.5
+        timeout.action()
+        fixture.requestedSample = {
+            fixture.monitor.receive(rssi: -55,
+                                    unlockThreshold: -55,
+                                    allowsBurst: true)
+        }
+
+        timeout.action()
+        burst.action()
+        burst.action()
+
+        XCTAssertEqual(fixture.confirmations, 0)
+    }
 }
 
 private final class Fixture {
@@ -86,11 +230,15 @@ private final class Fixture {
     var sampleRequests = 0
     var confirmations = 0
     var messages: [String] = []
+    var requestedSample: (() -> Void)?
     let scheduler = ManualProximityScheduler()
     lazy var monitor = ProximityMonitor(
         scheduler: scheduler,
         now: { self.now },
-        requestSample: { self.sampleRequests += 1 },
+        requestSample: {
+            self.sampleRequests += 1
+            self.requestedSample?()
+        },
         onConfirmed: { self.confirmations += 1 },
         logger: { self.messages.append($0) }
     )
