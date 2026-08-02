@@ -18,7 +18,7 @@ final class NotificationServiceTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        defaultsSuiteName = "jp.sone.BLEUnlockTests.TelegramNotificationService.\(UUID())"
+        defaultsSuiteName = "jp.sone.BLEUnlockTests.NotificationService.\(UUID())"
         defaults = UserDefaults(suiteName: defaultsSuiteName)
         defaults.removePersistentDomain(forName: defaultsSuiteName)
         settings = NotificationSettings(defaults: defaults,
