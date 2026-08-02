@@ -38,7 +38,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     let macLocationProvider = CoreMacLocationProvider()
     lazy var notificationService: NotificationHandling = NotificationService(
         settings: notificationSettings,
-        sender: TelegramNotifier(transport: URLSessionTransport()),
+        telegramSender: TelegramNotifier(transport: URLSessionTransport()),
+        synologySender: SynologyNotifier(transport: URLSessionTransport()),
         camera: CameraCapture(),
         location: macLocationProvider,
         reporter: RateLimitedFailureReporter()

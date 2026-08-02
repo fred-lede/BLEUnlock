@@ -7,7 +7,8 @@ final class NotificationServiceTests: XCTestCase {
     private var defaultsSuiteName: String!
     private var defaults: UserDefaults!
     private var settings: NotificationSettings!
-    private var sender: RecordingTelegramSender!
+    private var telegramSender: RecordingTelegramSender!
+    private var synologySender: RecordingSynologySender!
     private var camera: StubPhotoCapturer!
     private var location: StubMacLocationProvider!
     private var reporter: RecordingFailureReporter!
@@ -23,14 +24,16 @@ final class NotificationServiceTests: XCTestCase {
         settings = NotificationSettings(defaults: defaults,
                                        telegramSecrets: MemorySecretStore(),
                                        synologySecrets: MemorySecretStore())
-        sender = RecordingTelegramSender()
+        telegramSender = RecordingTelegramSender()
+        synologySender = RecordingSynologySender()
         camera = StubPhotoCapturer()
         location = StubMacLocationProvider()
         reporter = RecordingFailureReporter()
         remover = RecordingFileRemover()
         service = NotificationService(
             settings: settings,
-            sender: sender,
+            telegramSender: telegramSender,
+            synologySender: synologySender,
             camera: camera,
             location: location,
             removeFile: remover.remove,
@@ -43,7 +46,8 @@ final class NotificationServiceTests: XCTestCase {
         defaultsSuiteName = nil
         defaults = nil
         settings = nil
-        sender = nil
+        telegramSender = nil
+        synologySender = nil
         camera = nil
         location = nil
         reporter = nil
@@ -79,7 +83,8 @@ final class NotificationServiceTests: XCTestCase {
         settings.setEnabled(true, for: .telegram)
         service = NotificationService(
             settings: settings,
-            sender: sender,
+            telegramSender: telegramSender,
+            synologySender: synologySender,
             camera: camera,
             location: location,
             removeFile: remover.remove,
@@ -109,9 +114,9 @@ final class NotificationServiceTests: XCTestCase {
         service.handle(context(event: .away, rssi: -47))
 
         XCTAssertEqual(camera.captureCalls, 0)
-        XCTAssertEqual(sender.photoCalls.count, 0)
-        XCTAssertEqual(sender.textCalls.count, 1)
-        let call = try XCTUnwrap(sender.textCalls.first)
+        XCTAssertEqual(telegramSender.photoCalls.count, 0)
+        XCTAssertEqual(telegramSender.textCalls.count, 1)
+        let call = try XCTUnwrap(telegramSender.textCalls.first)
         XCTAssertEqual(call.credentials, .init(token: "token", chatID: "chat"))
         let lines = call.text.components(separatedBy: "\n")
         XCTAssertEqual(lines.count, 3)
@@ -130,9 +135,9 @@ final class NotificationServiceTests: XCTestCase {
         service.handle(context(event: .intruded))
 
         XCTAssertEqual(camera.captureCalls, 1)
-        XCTAssertEqual(sender.photoCalls.count, 1)
-        XCTAssertEqual(sender.photoCalls.first?.photoURL, photoURL)
-        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(telegramSender.photoCalls.count, 1)
+        XCTAssertEqual(telegramSender.photoCalls.first?.photoURL, photoURL)
+        XCTAssertEqual(telegramSender.textCalls.count, 0)
         XCTAssertEqual(remover.calls, [photoURL])
         XCTAssertTrue(reporter.categories.isEmpty)
     }
@@ -140,12 +145,12 @@ final class NotificationServiceTests: XCTestCase {
     func testIntrudedDeletesPhotoWhenUploadFailsWithoutTextRetry() throws {
         try configure()
         camera.result = .success(photoURL)
-        sender.photoResult = .failure(.transport)
+        telegramSender.photoResult = .failure(.transport)
 
         service.handle(context(event: .intruded))
 
-        XCTAssertEqual(sender.photoCalls.count, 1)
-        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(telegramSender.photoCalls.count, 1)
+        XCTAssertEqual(telegramSender.textCalls.count, 0)
         XCTAssertEqual(remover.calls, [photoURL])
         XCTAssertEqual(reporter.categories, ["telegram"])
     }
@@ -153,12 +158,12 @@ final class NotificationServiceTests: XCTestCase {
     func testCancelledPhotoUploadDeletesPhotoWithoutTextRetry() throws {
         try configure()
         camera.result = .success(photoURL)
-        sender.photoResult = .failure(.transport)
+        telegramSender.photoResult = .failure(.transport)
 
         service.handle(context(event: .intruded))
 
-        XCTAssertEqual(sender.photoCalls.count, 1)
-        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(telegramSender.photoCalls.count, 1)
+        XCTAssertEqual(telegramSender.textCalls.count, 0)
         XCTAssertEqual(remover.calls, [photoURL])
         XCTAssertEqual(reporter.categories, ["telegram"])
     }
@@ -169,20 +174,20 @@ final class NotificationServiceTests: XCTestCase {
 
         service.handle(context(event: .intruded, rssi: -47))
 
-        XCTAssertEqual(sender.photoCalls.count, 0)
-        XCTAssertEqual(sender.textCalls.count, 1)
+        XCTAssertEqual(telegramSender.photoCalls.count, 0)
+        XCTAssertEqual(telegramSender.textCalls.count, 1)
         XCTAssertEqual(reporter.categories, ["camera"])
     }
 
     func testRequestConstructionFailureDeletesPhoto() throws {
         try configure()
         camera.result = .success(photoURL)
-        sender.photoResult = .failure(.invalidRequest)
+        telegramSender.photoResult = .failure(.invalidRequest)
 
         service.handle(context(event: .intruded))
 
-        XCTAssertEqual(sender.photoCalls.count, 1)
-        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(telegramSender.photoCalls.count, 1)
+        XCTAssertEqual(telegramSender.textCalls.count, 0)
         XCTAssertEqual(remover.calls, [photoURL])
         XCTAssertEqual(reporter.categories, ["telegram"])
     }
@@ -199,10 +204,10 @@ final class NotificationServiceTests: XCTestCase {
 
         service.handle(context(event: .intruded))
 
-        XCTAssertEqual(sender.photoCalls.count, 1)
-        XCTAssertTrue(sender.photoCalls[0].caption.contains("25.033000, 121.565400"))
-        XCTAssertEqual(sender.locationCalls.map(\.location), [validLocation])
-        XCTAssertEqual(sender.callOrder, [.photo, .location])
+        XCTAssertEqual(telegramSender.photoCalls.count, 1)
+        XCTAssertTrue(telegramSender.photoCalls[0].caption.contains("25.033000, 121.565400"))
+        XCTAssertEqual(telegramSender.locationCalls.map(\.location), [validLocation])
+        XCTAssertEqual(telegramSender.callOrder, [.photo, .location])
     }
 
     func testLocationDisabledNeverCallsProviderOrSendsMap() throws {
@@ -213,8 +218,8 @@ final class NotificationServiceTests: XCTestCase {
         service.handle(context(event: .intruded))
 
         XCTAssertTrue(location.requestedDates.isEmpty)
-        XCTAssertTrue(sender.locationCalls.isEmpty)
-        XCTAssertEqual(sender.callOrder, [.photo])
+        XCTAssertTrue(telegramSender.locationCalls.isEmpty)
+        XCTAssertEqual(telegramSender.callOrder, [.photo])
     }
 
     func testLocationFailureSendsPhotoWithUnavailableCaptionAndNoMap() throws {
@@ -225,8 +230,8 @@ final class NotificationServiceTests: XCTestCase {
 
         service.handle(context(event: .intruded))
 
-        XCTAssertTrue(sender.photoCalls[0].caption.contains(t("telegram_location_unavailable")))
-        XCTAssertTrue(sender.locationCalls.isEmpty)
+        XCTAssertTrue(telegramSender.photoCalls[0].caption.contains(t("telegram_location_unavailable")))
+        XCTAssertTrue(telegramSender.locationCalls.isEmpty)
         XCTAssertEqual(reporter.categories, ["location"])
         XCTAssertEqual(reporter.messages, [t("telegram_location_error")])
     }
@@ -243,11 +248,11 @@ final class NotificationServiceTests: XCTestCase {
         service.handle(context(event: .intruded))
 
         XCTAssertEqual(location.token.cancelCalls, 1)
-        XCTAssertEqual(sender.textCalls.count, 1)
-        XCTAssertFalse(sender.textCalls[0].text.contains("25.033000"))
-        XCTAssertTrue(sender.photoCalls.isEmpty)
-        XCTAssertTrue(sender.locationCalls.isEmpty)
-        XCTAssertEqual(sender.callOrder, [.text])
+        XCTAssertEqual(telegramSender.textCalls.count, 1)
+        XCTAssertFalse(telegramSender.textCalls[0].text.contains("25.033000"))
+        XCTAssertTrue(telegramSender.photoCalls.isEmpty)
+        XCTAssertTrue(telegramSender.locationCalls.isEmpty)
+        XCTAssertEqual(telegramSender.callOrder, [.text])
     }
 
     func testPhotoUploadFailureDoesNotSendNativeMapAndCleansFile() throws {
@@ -258,12 +263,12 @@ final class NotificationServiceTests: XCTestCase {
                                          longitude: 121.5654,
                                          horizontalAccuracy: 18,
                                          timestamp: Date(timeIntervalSince1970: 100)))
-        sender.photoResult = .failure(.transport)
+        telegramSender.photoResult = .failure(.transport)
 
         service.handle(context(event: .intruded))
 
-        XCTAssertTrue(sender.locationCalls.isEmpty)
-        XCTAssertEqual(sender.callOrder, [.photo])
+        XCTAssertTrue(telegramSender.locationCalls.isEmpty)
+        XCTAssertEqual(telegramSender.callOrder, [.photo])
         XCTAssertEqual(remover.calls, [photoURL])
     }
 
@@ -275,13 +280,13 @@ final class NotificationServiceTests: XCTestCase {
                                          longitude: 121.5654,
                                          horizontalAccuracy: 18,
                                          timestamp: Date(timeIntervalSince1970: 100)))
-        sender.locationResult = .failure(.transport)
+        telegramSender.locationResult = .failure(.transport)
 
         service.handle(context(event: .intruded))
 
-        XCTAssertEqual(sender.photoCalls.count, 1)
-        XCTAssertEqual(sender.locationCalls.count, 1)
-        XCTAssertEqual(sender.callOrder, [.photo, .location])
+        XCTAssertEqual(telegramSender.photoCalls.count, 1)
+        XCTAssertEqual(telegramSender.locationCalls.count, 1)
+        XCTAssertEqual(telegramSender.callOrder, [.photo, .location])
         XCTAssertEqual(reporter.categories.last, "telegram-location")
         XCTAssertEqual(reporter.messages.last, t("telegram_location_send_error"))
     }
@@ -297,7 +302,8 @@ final class NotificationServiceTests: XCTestCase {
         let formatter = RecordingNotificationMessageFormatter()
         service = NotificationService(
             settings: settings,
-            sender: sender,
+            telegramSender: telegramSender,
+            synologySender: synologySender,
             camera: camera,
             location: location,
             removeFile: remover.remove,
@@ -322,8 +328,8 @@ final class NotificationServiceTests: XCTestCase {
 
         assertSuccess(photoResult)
         XCTAssertEqual(camera.captureCalls, 1)
-        XCTAssertEqual(sender.photoCalls.count, 1)
-        XCTAssertEqual(sender.textCalls.count, 0)
+        XCTAssertEqual(telegramSender.photoCalls.count, 1)
+        XCTAssertEqual(telegramSender.textCalls.count, 0)
         XCTAssertEqual(remover.calls, [photoURL])
 
         settings.setTakePhotoOnIntruded(false, for: .telegram)
@@ -332,8 +338,8 @@ final class NotificationServiceTests: XCTestCase {
 
         assertSuccess(textResult)
         XCTAssertEqual(camera.captureCalls, 1)
-        XCTAssertEqual(sender.photoCalls.count, 1)
-        XCTAssertEqual(sender.textCalls.count, 1)
+        XCTAssertEqual(telegramSender.photoCalls.count, 1)
+        XCTAssertEqual(telegramSender.textCalls.count, 1)
     }
 
     func testPhotoEnabledTestSurfacesCaptureFailureAfterTextFallback() throws {
@@ -347,9 +353,9 @@ final class NotificationServiceTests: XCTestCase {
             return XCTFail("Expected camera failure, got \(String(describing: result))")
         }
         XCTAssertEqual(error as? CameraCaptureError, .denied)
-        XCTAssertEqual(sender.textCalls.count, 1,
+        XCTAssertEqual(telegramSender.textCalls.count, 1,
                        "The test alert may still fall back to text")
-        XCTAssertEqual(sender.photoCalls.count, 0)
+        XCTAssertEqual(telegramSender.photoCalls.count, 0)
         XCTAssertEqual(reporter.categories, ["camera"])
     }
 
@@ -449,6 +455,129 @@ final class NotificationServiceTests: XCTestCase {
         settings.setEnabled(true, for: .telegram)
     }
 
+    private func configureSynology() throws {
+        try settings.saveSynologyCredentials(webhookURL: "https://nas.local",
+                                             username: "user",
+                                             password: "pass",
+                                             channelID: "42")
+        settings.setEnabled(true, for: .synologyChat)
+    }
+
+    func testSynologyChannelSendsTextForAwayEvent() throws {
+        settings.selectedChannel = .synologyChat
+        try configureSynology()
+
+        service.handle(context(event: .away, rssi: -47))
+
+        XCTAssertEqual(camera.captureCalls, 0)
+        XCTAssertEqual(synologySender.photoCalls.count, 0)
+        XCTAssertEqual(synologySender.textCalls.count, 1)
+        let call = try XCTUnwrap(synologySender.textCalls.first)
+        XCTAssertEqual(call.credentials,
+                       SynologyCredentials(webhookURL: "https://nas.local",
+                                           username: "user",
+                                           password: "pass",
+                                           channelID: "42"))
+        XCTAssertTrue(call.text.contains(t("telegram_event_away")))
+    }
+
+    func testSynologyIntrudedWithPhotoSendsPhotoAndDeletesFile() throws {
+        settings.selectedChannel = .synologyChat
+        try configureSynology()
+        camera.result = .success(photoURL)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(camera.captureCalls, 1)
+        XCTAssertEqual(synologySender.photoCalls.count, 1)
+        XCTAssertEqual(synologySender.photoCalls.first?.photoURL, photoURL)
+        XCTAssertEqual(synologySender.textCalls.count, 0)
+        XCTAssertEqual(remover.calls, [photoURL])
+        XCTAssertTrue(reporter.categories.isEmpty)
+    }
+
+    func testSynologyPhotoUploadFailureDeletesFileWithoutTextRetry() throws {
+        settings.selectedChannel = .synologyChat
+        try configureSynology()
+        camera.result = .success(photoURL)
+        synologySender.photoResult = .failure(.uploadFailed)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(synologySender.photoCalls.count, 1)
+        XCTAssertEqual(synologySender.textCalls.count, 0)
+        XCTAssertEqual(remover.calls, [photoURL])
+        XCTAssertEqual(reporter.categories, ["synology"])
+    }
+
+    func testSynologyCaptureFailureFallsBackToText() throws {
+        settings.selectedChannel = .synologyChat
+        try configureSynology()
+        camera.result = .failure(.denied)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(synologySender.photoCalls.count, 0)
+        XCTAssertEqual(synologySender.textCalls.count, 1)
+        XCTAssertEqual(reporter.categories, ["camera"])
+    }
+
+    func testSynologyLocationEnabledIncludesMapLinkInCaptionWithoutNativeMap() throws {
+        settings.selectedChannel = .synologyChat
+        try configureSynology()
+        settings.setAttachMacLocation(true, for: .synologyChat)
+        camera.result = .success(photoURL)
+        location.result = .success(.init(latitude: 25.033,
+                                         longitude: 121.5654,
+                                         horizontalAccuracy: 18,
+                                         timestamp: Date(timeIntervalSince1970: 100)))
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(synologySender.photoCalls.count, 1)
+        XCTAssertTrue(synologySender.photoCalls[0].caption.contains("25.033000, 121.565400"))
+        XCTAssertTrue(synologySender.photoCalls[0].caption.contains("maps.apple.com"))
+        XCTAssertTrue(location.requestedDates.count == 1)
+        XCTAssertEqual(telegramSender.locationCalls.count, 0,
+                       "Synology has no native map message")
+    }
+
+    func testSynologyDisabledOrUnconfiguredDoesNothing() throws {
+        settings.selectedChannel = .synologyChat
+
+        service.handle(context(event: .intruded))
+        assertNoCameraOrNetworkCalls()
+
+        settings.setEnabled(true, for: .synologyChat)
+        service.handle(context(event: .intruded))
+        assertNoCameraOrNetworkCalls()
+    }
+
+    func testSelectedChannelRoutesToTelegramWhenTelegramIsSelected() throws {
+        settings.selectedChannel = .telegram
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
+        settings.setEnabled(true, for: .telegram)
+        camera.result = .success(photoURL)
+
+        service.handle(context(event: .intruded))
+
+        XCTAssertEqual(telegramSender.photoCalls.count, 1)
+        XCTAssertEqual(synologySender.photoCalls.count, 0)
+    }
+
+    func testSynologyTestNotificationUsesSynologyPhotoPreference() throws {
+        settings.selectedChannel = .synologyChat
+        try configureSynology()
+        camera.result = .success(photoURL)
+        var result: Result<Void, Error>?
+
+        service.sendTest(hostName: "Fred-Mac") { result = $0 }
+
+        assertSuccess(result)
+        XCTAssertEqual(synologySender.photoCalls.count, 1)
+        XCTAssertEqual(camera.captureCalls, 1)
+    }
+
     private func context(event: NotificationEvent, rssi: Int? = nil) -> NotificationEventContext {
         .init(event: event,
               hostName: "Fred-Mac",
@@ -460,9 +589,11 @@ final class NotificationServiceTests: XCTestCase {
                                               line: UInt = #line) {
         XCTAssertEqual(camera.captureCalls, 0, file: file, line: line)
         XCTAssertTrue(location.requestedDates.isEmpty, file: file, line: line)
-        XCTAssertEqual(sender.textCalls.count, 0, file: file, line: line)
-        XCTAssertEqual(sender.photoCalls.count, 0, file: file, line: line)
-        XCTAssertEqual(sender.locationCalls.count, 0, file: file, line: line)
+        XCTAssertEqual(telegramSender.textCalls.count, 0, file: file, line: line)
+        XCTAssertEqual(telegramSender.photoCalls.count, 0, file: file, line: line)
+        XCTAssertEqual(telegramSender.locationCalls.count, 0, file: file, line: line)
+        XCTAssertEqual(synologySender.textCalls.count, 0, file: file, line: line)
+        XCTAssertEqual(synologySender.photoCalls.count, 0, file: file, line: line)
     }
 
     private func assertSuccess(_ result: Result<Void, Error>?,

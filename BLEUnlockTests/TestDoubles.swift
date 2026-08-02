@@ -168,3 +168,38 @@ final class RecordingFailureNotificationDelivery: FailureNotificationDelivering 
         messages.append(message)
     }
 }
+
+final class RecordingSynologySender: SynologySending {
+    struct TextCall {
+        let credentials: SynologyCredentials
+        let text: String
+    }
+
+    struct PhotoCall {
+        let credentials: SynologyCredentials
+        let photoURL: URL
+        let caption: String
+    }
+
+    var textResult: Result<Void, SynologyError> = .success(())
+    var photoResult: Result<Void, SynologyError> = .success(())
+    private(set) var textCalls: [TextCall] = []
+    private(set) var photoCalls: [PhotoCall] = []
+
+    func sendText(credentials: SynologyCredentials,
+                  text: String,
+                  completion: @escaping (Result<Void, SynologyError>) -> Void) {
+        textCalls.append(.init(credentials: credentials, text: text))
+        completion(textResult)
+    }
+
+    func sendPhoto(credentials: SynologyCredentials,
+                   photoURL: URL,
+                   caption: String,
+                   completion: @escaping (Result<Void, SynologyError>) -> Void) {
+        photoCalls.append(.init(credentials: credentials,
+                                photoURL: photoURL,
+                                caption: caption))
+        completion(photoResult)
+    }
+}

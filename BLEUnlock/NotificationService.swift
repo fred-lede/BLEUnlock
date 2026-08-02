@@ -192,7 +192,8 @@ private enum NotificationServiceError: LocalizedError {
 
 final class NotificationService: NotificationHandling {
     private let settings: NotificationSettings
-    private let sender: TelegramSending
+    private let telegramSender: TelegramSending
+    private let synologySender: SynologySending
     private let camera: PhotoCapturing
     private let location: MacLocationProviding
     private let removeFile: (URL) throws -> Void
@@ -200,7 +201,8 @@ final class NotificationService: NotificationHandling {
     private let formatter: NotificationMessageFormatting
 
     init(settings: NotificationSettings,
-         sender: TelegramSending,
+         telegramSender: TelegramSending,
+         synologySender: SynologySending,
          camera: PhotoCapturing,
          location: MacLocationProviding = CoreMacLocationProvider(),
          removeFile: @escaping (URL) throws -> Void = {
@@ -209,7 +211,8 @@ final class NotificationService: NotificationHandling {
          reporter: FailureReporting,
          formatter: NotificationMessageFormatting = NotificationMessageFormatter()) {
         self.settings = settings
-        self.sender = sender
+        self.telegramSender = telegramSender
+        self.synologySender = synologySender
         self.camera = camera
         self.location = location
         self.removeFile = removeFile
@@ -218,10 +221,37 @@ final class NotificationService: NotificationHandling {
     }
 
     func handle(_ context: NotificationEventContext) {
-        guard settings.isEnabled(.telegram), settings.isEventEnabled(context.event) else {
+        let channel = settings.selectedChannel
+        guard settings.isEnabled(channel), settings.isEventEnabled(context.event) else {
+            return
+        }
+        do {
+            guard try settings.isConfigured(channel) else { return }
+        } catch {
+            reporter.report(category: "settings",
+                            message: t("notification_error_settings_unavailable"))
             return
         }
 
+        switch channel {
+        case .telegram:
+            handleTelegram(context)
+        case .synologyChat:
+            handleSynology(context)
+        }
+    }
+
+    func sendTest(hostName: String,
+                  completion: @escaping (Result<Void, Error>) -> Void) {
+        switch settings.selectedChannel {
+        case .telegram:
+            sendTelegramTest(hostName: hostName, completion: completion)
+        case .synologyChat:
+            sendSynologyTest(hostName: hostName, completion: completion)
+        }
+    }
+
+    private func handleTelegram(_ context: NotificationEventContext) {
         let credentials: TelegramCredentials
         do {
             guard let storedCredentials = try settings.telegramCredentials() else { return }
@@ -249,8 +279,8 @@ final class NotificationService: NotificationHandling {
         }
     }
 
-    func sendTest(hostName: String,
-                  completion: @escaping (Result<Void, Error>) -> Void) {
+    private func sendTelegramTest(hostName: String,
+                                  completion: @escaping (Result<Void, Error>) -> Void) {
         let credentials: TelegramCredentials
         do {
             guard let storedCredentials = try settings.telegramCredentials() else {
@@ -264,9 +294,9 @@ final class NotificationService: NotificationHandling {
         }
 
         let context = NotificationEventContext(event: .intruded,
-                                           hostName: hostName,
-                                           timestamp: Date(),
-                                           rssi: nil)
+                                               hostName: hostName,
+                                               timestamp: Date(),
+                                               rssi: nil)
         if settings.takePhotoOnIntruded(.telegram) {
             if settings.attachMacLocation(.telegram) {
                 sendLocatedPhotoOrFallback(credentials: credentials,
@@ -318,9 +348,9 @@ final class NotificationService: NotificationHandling {
                 reporter.report(category: "location", message: t("telegram_location_error"))
             }
             let caption = formatter.photoCaption(for: context, location: position)
-            sender.sendPhoto(credentials: credentials,
-                             photoURL: photoURL,
-                             caption: caption) { [sender, removeFile, reporter] result in
+            telegramSender.sendPhoto(credentials: credentials,
+                                     photoURL: photoURL,
+                                     caption: caption) { [telegramSender, removeFile, reporter] result in
                 do {
                     try removeFile(photoURL)
                 } catch {
@@ -329,8 +359,8 @@ final class NotificationService: NotificationHandling {
                 }
                 switch (result, position) {
                 case (.success, .some(let position)):
-                    sender.sendLocation(credentials: credentials,
-                                        location: position) { mapResult in
+                    telegramSender.sendLocation(credentials: credentials,
+                                                location: position) { mapResult in
                         if case .failure = mapResult {
                             reporter.report(category: "telegram-location",
                                             message: t("telegram_location_send_error"))
@@ -351,7 +381,7 @@ final class NotificationService: NotificationHandling {
     private func sendPhotoOrFallback(credentials: TelegramCredentials,
                                      message: String,
                                      completion: ((Result<Void, Error>) -> Void)?) {
-        camera.capture { [sender, removeFile, reporter] captureResult in
+        camera.capture { [telegramSender, removeFile, reporter] captureResult in
             switch captureResult {
             case .failure(let error):
                 reporter.report(category: "camera", message: error.localizedDescription)
@@ -360,9 +390,9 @@ final class NotificationService: NotificationHandling {
                               message: message,
                               completion: nil)
             case .success(let photoURL):
-                sender.sendPhoto(credentials: credentials,
-                                 photoURL: photoURL,
-                                 caption: message) { result in
+                telegramSender.sendPhoto(credentials: credentials,
+                                         photoURL: photoURL,
+                                         caption: message) { result in
                     do {
                         try removeFile(photoURL)
                     } catch {
@@ -381,9 +411,172 @@ final class NotificationService: NotificationHandling {
     private func sendText(credentials: TelegramCredentials,
                           message: String,
                           completion: ((Result<Void, Error>) -> Void)?) {
-        sender.sendText(credentials: credentials, text: message) { [reporter] result in
+        telegramSender.sendText(credentials: credentials, text: message) { [reporter] result in
             if case .failure(let error) = result {
                 reporter.report(category: "telegram", message: error.localizedDescription)
+            }
+            completion?(result.mapError { $0 as Error })
+        }
+    }
+
+    private func handleSynology(_ context: NotificationEventContext) {
+        let credentials: SynologyCredentials
+        do {
+            guard let storedCredentials = try settings.synologyCredentials() else { return }
+            credentials = storedCredentials
+        } catch {
+            reporter.report(category: "settings",
+                            message: t("notification_error_settings_unavailable"))
+            return
+        }
+
+        if context.event == .intruded && settings.takePhotoOnIntruded(.synologyChat) {
+            if settings.attachMacLocation(.synologyChat) {
+                sendLocatedSynologyPhotoOrFallback(credentials: credentials,
+                                                   context: context,
+                                                   completion: nil)
+            } else {
+                sendSynologyPhotoOrFallback(credentials: credentials,
+                                            context: context,
+                                            completion: nil)
+            }
+        } else {
+            sendSynologyText(credentials: credentials,
+                             message: formatter.message(for: context),
+                             completion: nil)
+        }
+    }
+
+    private func sendSynologyTest(hostName: String,
+                                  completion: @escaping (Result<Void, Error>) -> Void) {
+        let credentials: SynologyCredentials
+        do {
+            guard let storedCredentials = try settings.synologyCredentials() else {
+                completion(.failure(NotificationServiceError.notConfigured))
+                return
+            }
+            credentials = storedCredentials
+        } catch {
+            completion(.failure(NotificationServiceError.settingsUnavailable))
+            return
+        }
+
+        let context = NotificationEventContext(event: .intruded,
+                                               hostName: hostName,
+                                               timestamp: Date(),
+                                               rssi: nil)
+        if settings.takePhotoOnIntruded(.synologyChat) {
+            if settings.attachMacLocation(.synologyChat) {
+                sendLocatedSynologyPhotoOrFallback(credentials: credentials,
+                                                   context: context,
+                                                   completion: completion)
+            } else {
+                sendSynologyPhotoOrFallback(credentials: credentials,
+                                            context: context,
+                                            completion: completion)
+            }
+        } else {
+            sendSynologyText(credentials: credentials,
+                             message: formatter.message(for: context),
+                             completion: completion)
+        }
+    }
+
+    private func sendLocatedSynologyPhotoOrFallback(
+        credentials: SynologyCredentials,
+        context: NotificationEventContext,
+        completion: ((Result<Void, Error>) -> Void)?
+    ) {
+        let coordinator = PhotoLocationCoordinator(camera: camera, location: location)
+        coordinator.capture(capturedAt: context.timestamp) { [coordinator] outcome in
+            _ = coordinator
+            self.deliverSynology(outcome,
+                                 credentials: credentials,
+                                 context: context,
+                                 completion: completion)
+        }
+    }
+
+    private func deliverSynology(
+        _ outcome: PhotoLocationOutcome,
+        credentials: SynologyCredentials,
+        context: NotificationEventContext,
+        completion: ((Result<Void, Error>) -> Void)?
+    ) {
+        switch outcome {
+        case .cameraFailure(let error):
+            reporter.report(category: "camera", message: error.localizedDescription)
+            completion?(.failure(error))
+            sendSynologyText(credentials: credentials,
+                             message: formatter.message(for: context),
+                             completion: nil)
+        case .photo(let photoURL, let positionResult):
+            let position = try? positionResult.get()
+            if case .failure = positionResult {
+                reporter.report(category: "location", message: t("telegram_location_error"))
+            }
+            let caption = formatter.photoCaption(for: context, location: position)
+            sendSynologyPhoto(credentials: credentials,
+                              photoURL: photoURL,
+                              caption: caption,
+                              completion: completion)
+        }
+    }
+
+    private func sendSynologyPhotoOrFallback(
+        credentials: SynologyCredentials,
+        context: NotificationEventContext,
+        completion: ((Result<Void, Error>) -> Void)?
+    ) {
+        camera.capture { [weak self] captureResult in
+            guard let self = self else { return }
+            switch captureResult {
+            case .failure(let error):
+                self.reporter.report(category: "camera", message: error.localizedDescription)
+                completion?(.failure(error))
+                self.sendSynologyText(credentials: credentials,
+                                      message: self.formatter.message(for: context),
+                                      completion: nil)
+            case .success(let photoURL):
+                self.sendSynologyPhoto(credentials: credentials,
+                                       photoURL: photoURL,
+                                       caption: self.formatter.message(for: context),
+                                       completion: completion)
+            }
+        }
+    }
+
+    private func sendSynologyPhoto(credentials: SynologyCredentials,
+                                   photoURL: URL,
+                                   caption: String,
+                                   completion: ((Result<Void, Error>) -> Void)?) {
+        synologySender.sendPhoto(credentials: credentials,
+                                 photoURL: photoURL,
+                                 caption: caption) { [removeFile, reporter] result in
+            do {
+                try removeFile(photoURL)
+            } catch {
+                reporter.report(category: "file",
+                                message: t("notification_error_file_cleanup"))
+            }
+            switch result {
+            case .success:
+                completion?(.success(()))
+            case .failure(let error):
+                reporter.report(category: "synology",
+                                message: error.localizedDescription)
+                completion?(.failure(error))
+            }
+        }
+    }
+
+    private func sendSynologyText(credentials: SynologyCredentials,
+                                  message: String,
+                                  completion: ((Result<Void, Error>) -> Void)?) {
+        synologySender.sendText(credentials: credentials,
+                                text: message) { [reporter] result in
+            if case .failure(let error) = result {
+                reporter.report(category: "synology", message: error.localizedDescription)
             }
             completion?(result.mapError { $0 as Error })
         }
