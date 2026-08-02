@@ -71,7 +71,7 @@ For **Telegram**, keep the existing setup:
 2. Send the bot a message, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and copy the numeric Chat ID from the response.
 3. Open *BLEUnlock > Notification Settings > Configure…* and save both values.
 
-For **Synology Chat**, you need an incoming webhook (create one in *Synology Chat > Settings > Integration*), a DSM username and password or a personal API token (for accounts with two-factor authentication enabled), and the numeric ID of the channel that should receive notifications. Open *BLEUnlock > Notification Settings > Configure…* and save these values.
+For **Synology Chat**, you need an incoming webhook (create one in *Synology Chat > Settings > Integration*), a DSM username and password or a personal API token (for accounts with two-factor authentication enabled), and the numeric ID of the channel that should receive notifications. To find a channel ID, open the channel in the Synology Chat web app and copy the number at the end of the URL, or enumerate channel IDs with the `SYNO.Chat.Channel` `list` API. Open *BLEUnlock > Notification Settings > Configure…* and save these values.
 
 A channel can be enabled only after it is configured. Then send a test notification, choose the event switches, and enable notifications.
 

@@ -64,7 +64,7 @@ Bluetooth | 当然ながら、Bluetoothへのアクセスが必要です。
 2. ボットにメッセージを送信してから、`https://api.telegram.org/bot<TOKEN>/getUpdates` を開き、応答内の数値のChat IDをコピーします。
 3. *BLEUnlock > 通知設定 > 設定…* を開き、トークンとChat IDを保存します。
 
-**Synology Chat**では、受信ウェブフック（*Synology Chat > 設定 > 統合*で作成）、DSMユーザー名とパスワード（二段階認証を使用するアカウントでは個人用APIトークン）、通知先チャンネルの数値IDが必要です。*BLEUnlock > 通知設定 > 設定…* を開き、これらの値を保存します。
+**Synology Chat**では、受信ウェブフック（*Synology Chat > 設定 > 統合*で作成）、DSMユーザー名とパスワード（二段階認証を使用するアカウントでは個人用APIトークン）、通知先チャンネルの数値IDが必要です。チャンネルIDを確認するには、Synology Chatのウェブアプリでそのチャンネルを開いてURL末尾の数値をコピーするか、`SYNO.Chat.Channel`の`list` APIでID一覧を取得します。*BLEUnlock > 通知設定 > 設定…* を開き、これらの値を保存します。
 
 チャンネルは設定してからでないと有効にできません。その後、テスト通知を送信し、通知するイベントを選んでから通知を有効にします。
 

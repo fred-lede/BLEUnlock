@@ -80,7 +80,7 @@ brew install bleunlock
 2. 傳送一則訊息給該機器人，接著開啟 `https://api.telegram.org/bot<TOKEN>/getUpdates`，從回應中複製數字型 Chat ID。
 3. 開啟 *BLEUnlock > 通知設定 > 設定…*（英文介面：*BLEUnlock > Notification Settings > Configure…*），並儲存這兩個值。
 
-**Synology Chat** 需要收件網頁掛勾（在 *Synology Chat > 設定 > 整合* 中建立）、DSM 使用者名稱與密碼（啟用雙重驗證的帳號可使用個人 API Token），以及通知目標頻道的數字型 ID。開啟 *BLEUnlock > 通知設定 > 設定…* 並儲存這些值。
+**Synology Chat** 需要收件網頁掛勾（在 *Synology Chat > 設定 > 整合* 中建立）、DSM 使用者名稱與密碼（啟用雙重驗證的帳號可使用個人 API Token），以及通知目標頻道的數字型 ID。若要取得頻道 ID，可在 Synology Chat 網頁版開啟該頻道並複製網址末尾的數字，或使用 `SYNO.Chat.Channel` 的 `list` API 列出頻道 ID。開啟 *BLEUnlock > 通知設定 > 設定…* 並儲存這些值。
 
 頻道必須先完成設定才能啟用。之後傳送測試通知、選擇事件開關，然後啟用通知。
 
