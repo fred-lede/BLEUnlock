@@ -327,6 +327,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3DD4B65E226C1C3400451B7B /* Build configuration list for PBXNativeTarget "BLEUnlock" */;
 			buildPhases = (
+				3DD4B661D17F4C226C1C3200451B7B /* PreCompile Clean */,
 				3DD4B64C226C1C3200451B7B /* Sources */,
 				3DD4B64D226C1C3200451B7B /* Frameworks */,
 				3DD4B64E226C1C3200451B7B /* Resources */,
@@ -357,6 +358,20 @@
 			productName = BLEUnlockTests;
 			productReference = 7E1000103000000000000001 /* BLEUnlockTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		3DD4B661D17F4C226C1C3200451B7B /* PreCompile Clean */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -d \"$PROJECT_DIR/build/Release\" ]; then
+  rm -rf \"$PROJECT_DIR/build/Release/\"*
+fi
+if [ -d \"$PROJECT_DIR/build/Debug\" ]; then
+  rm -rf \"$PROJECT_DIR/build/Debug/\"*
+fi";
 		};
 /* End PBXNativeTarget section */
 
