@@ -51,6 +51,7 @@
 "notification_status_enabled" = "Aktiviert";
 "notification_status_disabled" = "Deaktiviert";
 "notification_save" = "Speichern";
+"notification_password_stored" = "Gespeichert — leer lassen zum Beibehalten";
 "notification_test_success" = "Testbenachrichtigung gesendet.";
 "notification_test_failed" = "Die Testbenachrichtigung konnte nicht gesendet werden.";
 "notification_error_not_configured" = "Konfigurieren Sie zuerst den ausgewählten Benachrichtigungskanal.";

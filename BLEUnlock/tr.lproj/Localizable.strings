@@ -50,7 +50,8 @@
 "notification_status_not_configured" = "Yapılandırılmadı";
 "notification_status_enabled" = "Etkin";
 "notification_status_disabled" = "Devre dışı";
-"notification_save" = "Kaydet";
+"notification_save" = "Kaydedildi";
+"notification_password_stored" = "Kaydedildi — korumak için boş bırakın";
 "notification_test_success" = "Test bildirimi gönderildi.";
 "notification_test_failed" = "Test bildirimi gönderilemedi.";
 "notification_error_not_configured" = "Önce seçili bildirim kanalını yapılandırın.";

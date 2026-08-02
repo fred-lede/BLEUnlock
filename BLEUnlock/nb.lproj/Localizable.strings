@@ -51,6 +51,7 @@
 "notification_status_enabled" = "Aktivert";
 "notification_status_disabled" = "Deaktivert";
 "notification_save" = "Lagre";
+"notification_password_stored" = "Lagret — la stå tomt for å beholde";
 "notification_test_success" = "Testvarslingen ble sendt.";
 "notification_test_failed" = "Kunne ikke sende testvarslingen.";
 "notification_error_not_configured" = "Konfigurer den valgte varslingskanalen først.";

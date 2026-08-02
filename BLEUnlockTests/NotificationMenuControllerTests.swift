@@ -141,6 +141,34 @@ final class NotificationMenuControllerTests: XCTestCase {
                        .init(token: "replacement", chatID: "new-chat"))
     }
 
+    func testConfigurePassesExistingTelegramChatIDToDialog() throws {
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "stored-chat")
+        dialogs.telegramInput = .init(replacementToken: nil, chatID: "stored-chat")
+
+        controller.configure()
+
+        XCTAssertEqual(dialogs.existingChatIDs, ["stored-chat"])
+    }
+
+    func testConfigurePassesExistingSynologyNonSecretValuesToDialog() throws {
+        try settings.saveSynologyCredentials(webhookURL: "https://nas.local",
+                                              username: "user",
+                                              password: "secret",
+                                              channelID: "42")
+        controller.selectChannel(controller.channelItems[.synologyChat]!)
+        dialogs.synologyInput = .init(webhookURL: "https://nas.local",
+                                      username: "user",
+                                      password: nil,
+                                      channelID: "42")
+
+        controller.configure()
+
+        XCTAssertEqual(dialogs.existingSynologyValues.count, 1)
+        XCTAssertEqual(dialogs.existingSynologyValues[0].webhookURL, "https://nas.local")
+        XCTAssertEqual(dialogs.existingSynologyValues[0].username, "user")
+        XCTAssertEqual(dialogs.existingSynologyValues[0].channelID, "42")
+    }
+
     func testConfigureRoutesToSynologyDialogWhenSynologySelected() throws {
         controller.selectChannel(controller.channelItems[.synologyChat]!)
         dialogs.synologyInput = .init(webhookURL: "https://nas.local",
@@ -284,6 +312,10 @@ private final class RecordingNotificationDialogPresenter: NotificationDialogPres
     var telegramInput: TelegramCredentialInput?
     var synologyInput: SynologyCredentialInput?
     private(set) var hasStoredTokenValues: [Bool] = []
+    private(set) var existingChatIDs: [String?] = []
+    private(set) var existingSynologyValues: [(webhookURL: String?,
+                                              username: String?,
+                                              channelID: String?)] = []
     private(set) var telegramRequests = 0
     private(set) var synologyRequests = 0
     private(set) var results: [PresentedResult] = []
@@ -292,17 +324,23 @@ private final class RecordingNotificationDialogPresenter: NotificationDialogPres
     var onShowResult: (() -> Void)?
 
     func requestTelegramCredentials(hasStoredToken: Bool,
+                                    existingChatID: String?,
                                     completion: (TelegramCredentialInput?) -> Void) {
         requestWasOnMainThread = Thread.isMainThread
         hasStoredTokenValues.append(hasStoredToken)
+        existingChatIDs.append(existingChatID)
         telegramRequests += 1
         completion(telegramInput)
     }
 
     func requestSynologyCredentials(hasStoredPassword: Bool,
+                                    existingWebhookURL: String?,
+                                    existingUsername: String?,
+                                    existingChannelID: String?,
                                     completion: (SynologyCredentialInput?) -> Void) {
         requestWasOnMainThread = Thread.isMainThread
         synologyRequests += 1
+        existingSynologyValues.append((existingWebhookURL, existingUsername, existingChannelID))
         completion(synologyInput)
     }
 

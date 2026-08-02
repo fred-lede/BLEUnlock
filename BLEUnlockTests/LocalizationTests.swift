@@ -32,7 +32,8 @@ final class LocalizationTests: XCTestCase {
         "notification_save", "notification_test_success", "notification_test_failed",
         "notification_error_not_configured", "notification_error_settings_unavailable",
         "notification_error_file_cleanup", "notification_failure_notification_subtitle",
-        "notification_camera_privacy_synology"
+        "notification_camera_privacy_synology",
+        "notification_password_stored"
     ]
 
     private let synologyKeys: Set<String> = [

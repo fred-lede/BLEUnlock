@@ -3,8 +3,12 @@ import Foundation
 
 protocol NotificationDialogPresenting {
     func requestTelegramCredentials(hasStoredToken: Bool,
+                                    existingChatID: String?,
                                     completion: (TelegramCredentialInput?) -> Void)
     func requestSynologyCredentials(hasStoredPassword: Bool,
+                                    existingWebhookURL: String?,
+                                    existingUsername: String?,
+                                    existingChannelID: String?,
                                     completion: (SynologyCredentialInput?) -> Void)
     func showResult(title: String, message: String)
 }
@@ -225,7 +229,9 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
             return
         }
 
-        dialogs.requestTelegramCredentials(hasStoredToken: configured) { input in
+        let existingChatID = try? settings.existingTelegramChatID()
+        dialogs.requestTelegramCredentials(hasStoredToken: configured,
+                                           existingChatID: existingChatID) { input in
             guard let input = input else { return }
             do {
                 try self.settings.saveTelegramCredentials(replacementToken: input.replacementToken,
@@ -255,7 +261,11 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
             return
         }
 
-        dialogs.requestSynologyCredentials(hasStoredPassword: configured) { input in
+        let existingSynology = try? settings.existingSynologyNonSecretValues()
+        dialogs.requestSynologyCredentials(hasStoredPassword: configured,
+                                           existingWebhookURL: existingSynology?.webhookURL,
+                                           existingUsername: existingSynology?.username,
+                                           existingChannelID: existingSynology?.channelID) { input in
             guard let input = input else { return }
             do {
                 try self.settings.saveSynologyCredentials(webhookURL: input.webhookURL,
@@ -311,6 +321,7 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
 
 final class AppKitNotificationDialogPresenter: NotificationDialogPresenting {
     func requestTelegramCredentials(hasStoredToken: Bool,
+                                    existingChatID: String?,
                                     completion: (TelegramCredentialInput?) -> Void) {
         precondition(Thread.isMainThread)
 
@@ -328,10 +339,13 @@ final class AppKitNotificationDialogPresenter: NotificationDialogPresenting {
         let tokenLabel = NSTextField(labelWithString: t("telegram_bot_token"))
         let tokenField = NSSecureTextField()
         tokenField.stringValue = ""
-        tokenField.placeholderString = hasStoredToken ? nil : t("telegram_bot_token")
+        tokenField.placeholderString = hasStoredToken
+            ? t("notification_password_stored")
+            : t("telegram_bot_token")
 
         let chatIDLabel = NSTextField(labelWithString: t("telegram_chat_id"))
         let chatIDField = NSTextField()
+        chatIDField.stringValue = existingChatID ?? ""
 
         let stack = NSStackView(views: [explanation,
                                         privacy,
@@ -360,6 +374,9 @@ final class AppKitNotificationDialogPresenter: NotificationDialogPresenting {
     }
 
     func requestSynologyCredentials(hasStoredPassword: Bool,
+                                    existingWebhookURL: String?,
+                                    existingUsername: String?,
+                                    existingChannelID: String?,
                                     completion: (SynologyCredentialInput?) -> Void) {
         precondition(Thread.isMainThread)
 
@@ -376,14 +393,19 @@ final class AppKitNotificationDialogPresenter: NotificationDialogPresenting {
 
         let urlLabel = NSTextField(labelWithString: t("synology_webhook_url"))
         let urlField = NSTextField()
+        urlField.stringValue = existingWebhookURL ?? ""
         let usernameLabel = NSTextField(labelWithString: t("synology_username"))
         let usernameField = NSTextField()
+        usernameField.stringValue = existingUsername ?? ""
         let passwordLabel = NSTextField(labelWithString: t("synology_password"))
         let passwordField = NSSecureTextField()
         passwordField.stringValue = ""
-        passwordField.placeholderString = hasStoredPassword ? nil : t("synology_password")
+        passwordField.placeholderString = hasStoredPassword
+            ? t("notification_password_stored")
+            : t("synology_password")
         let channelIDLabel = NSTextField(labelWithString: t("synology_channel_id"))
         let channelIDField = NSTextField()
+        channelIDField.stringValue = existingChannelID ?? ""
 
         let stack = NSStackView(views: [explanation,
                                         privacy,

@@ -51,6 +51,7 @@
 "notification_status_enabled" = "Aktiveret";
 "notification_status_disabled" = "Deaktiveret";
 "notification_save" = "Gem";
+"notification_password_stored" = "Gemt — lad stå tom for at beholde";
 "notification_test_success" = "Testnotifikationen blev sendt.";
 "notification_test_failed" = "Testnotifikationen kunne ikke sendes.";
 "notification_error_not_configured" = "Konfigurer først den valgte meddelelseskanal.";

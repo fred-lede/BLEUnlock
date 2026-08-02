@@ -51,6 +51,7 @@
 "notification_status_enabled" = "Aktiverat";
 "notification_status_disabled" = "Inaktiverat";
 "notification_save" = "Spara";
+"notification_password_stored" = "Sparat — lämnas tomt för att behålla";
 "notification_test_success" = "Testnotisen skickades.";
 "notification_test_failed" = "Testnotisen kunde inte skickas.";
 "notification_error_not_configured" = "Konfigurera den valda aviseringskanalen först.";

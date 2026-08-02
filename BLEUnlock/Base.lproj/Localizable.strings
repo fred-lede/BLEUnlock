@@ -51,6 +51,7 @@
 "notification_status_enabled" = "Enabled";
 "notification_status_disabled" = "Disabled";
 "notification_save" = "Save";
+"notification_password_stored" = "Stored — leave blank to keep";
 "notification_test_success" = "Test notification sent.";
 "notification_test_failed" = "Could not send the test notification.";
 "notification_error_not_configured" = "Configure the selected notification channel first.";

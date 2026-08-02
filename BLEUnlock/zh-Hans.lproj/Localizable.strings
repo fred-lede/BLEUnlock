@@ -51,6 +51,7 @@
 "notification_status_enabled" = "已启用";
 "notification_status_disabled" = "已禁用";
 "notification_save" = "保存";
+"notification_password_stored" = "已保存 — 留空以保留";
 "notification_test_success" = "测试通知已发送。";
 "notification_test_failed" = "无法发送测试通知。";
 "notification_error_not_configured" = "请先配置所选通知渠道。";

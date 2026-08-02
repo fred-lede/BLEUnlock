@@ -96,6 +96,19 @@ final class NotificationSettings {
         }
     }
 
+    func existingTelegramChatID() throws -> String? {
+        return try telegramSecrets.string(for: Key.telegramChatID)
+    }
+
+    func existingSynologyNonSecretValues() throws -> (webhookURL: String?,
+                                                      username: String?,
+                                                      channelID: String?)? {
+        let webhookURL = try synologySecrets.string(for: Key.synologyWebhookURL)
+        let username = try synologySecrets.string(for: Key.synologyUsername)
+        let channelID = try synologySecrets.string(for: Key.synologyChannelID)
+        return (webhookURL, username, channelID)
+    }
+
     func telegramCredentials() throws -> TelegramCredentials? {
         guard let token = try telegramSecrets.string(for: Key.telegramToken), !token.isEmpty,
               let chatID = try telegramSecrets.string(for: Key.telegramChatID), !chatID.isEmpty else { return nil }

@@ -51,6 +51,7 @@
 "notification_status_enabled" = "有効";
 "notification_status_disabled" = "無効";
 "notification_save" = "保存";
+"notification_password_stored" = "保存済み — 空欄のままにすると維持されます";
 "notification_test_success" = "テスト通知を送信しました。";
 "notification_test_failed" = "テスト通知を送信できませんでした。";
 "notification_error_not_configured" = "先に選択した通知チャンネルを設定してください。";
