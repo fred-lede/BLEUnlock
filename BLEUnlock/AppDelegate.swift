@@ -346,7 +346,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
 
     @objc func onDisplayWake() {
         print("display wake")
-        //unlockedAt = Date().timeIntervalSince1970
+        unlockedAt = Date().timeIntervalSince1970
         displaySleep = false
         wakeTimer?.invalidate()
         wakeTimer = nil
