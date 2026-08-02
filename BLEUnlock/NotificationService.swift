@@ -218,13 +218,13 @@ final class NotificationService: NotificationHandling {
     }
 
     func handle(_ context: NotificationEventContext) {
-        guard settings.isEnabled, settings.isEventEnabled(context.event) else {
+        guard settings.isEnabled(.telegram), settings.isEventEnabled(context.event) else {
             return
         }
 
         let credentials: TelegramCredentials
         do {
-            guard let storedCredentials = try settings.credentials() else { return }
+            guard let storedCredentials = try settings.telegramCredentials() else { return }
             credentials = storedCredentials
         } catch {
             reporter.report(category: "settings",
@@ -232,8 +232,8 @@ final class NotificationService: NotificationHandling {
             return
         }
 
-        if context.event == .intruded && settings.takePhotoOnIntruded {
-            if settings.attachMacLocation {
+        if context.event == .intruded && settings.takePhotoOnIntruded(.telegram) {
+            if settings.attachMacLocation(.telegram) {
                 sendLocatedPhotoOrFallback(credentials: credentials,
                                            context: context,
                                            completion: nil)
@@ -253,7 +253,7 @@ final class NotificationService: NotificationHandling {
                   completion: @escaping (Result<Void, Error>) -> Void) {
         let credentials: TelegramCredentials
         do {
-            guard let storedCredentials = try settings.credentials() else {
+            guard let storedCredentials = try settings.telegramCredentials() else {
                 completion(.failure(NotificationServiceError.notConfigured))
                 return
             }
@@ -267,8 +267,8 @@ final class NotificationService: NotificationHandling {
                                            hostName: hostName,
                                            timestamp: Date(),
                                            rssi: nil)
-        if settings.takePhotoOnIntruded {
-            if settings.attachMacLocation {
+        if settings.takePhotoOnIntruded(.telegram) {
+            if settings.attachMacLocation(.telegram) {
                 sendLocatedPhotoOrFallback(credentials: credentials,
                                            context: context,
                                            completion: completion)

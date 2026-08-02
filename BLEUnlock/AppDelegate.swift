@@ -31,7 +31,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     var inScreensaver = false
     var lastRSSI: Int? = nil
     let notificationSettings = NotificationSettings(
-        secrets: KeychainStore(service: "jp.sone.BLEUnlock.telegram")
+        defaults: .standard,
+        telegramSecrets: KeychainStore(service: "jp.sone.BLEUnlock.telegram"),
+        synologySecrets: KeychainStore(service: "jp.sone.BLEUnlock.synology")
     )
     let macLocationProvider = CoreMacLocationProvider()
     lazy var notificationService: NotificationHandling = NotificationService(

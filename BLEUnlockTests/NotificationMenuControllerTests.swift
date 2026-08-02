@@ -16,7 +16,9 @@ final class NotificationMenuControllerTests: XCTestCase {
         defaultsSuiteName = "jp.sone.BLEUnlockTests.TelegramMenuController.\(UUID())"
         defaults = UserDefaults(suiteName: defaultsSuiteName)!
         defaults.removePersistentDomain(forName: defaultsSuiteName)
-        settings = NotificationSettings(defaults: defaults, secrets: MemorySecretStore())
+        settings = NotificationSettings(defaults: defaults,
+                                       telegramSecrets: MemorySecretStore(),
+                                       synologySecrets: MemorySecretStore())
         service = RecordingNotificationService()
         dialogs = RecordingNotificationDialogPresenter()
         locationAuthorization = RecordingLocationAuthorizationRequester()
@@ -48,7 +50,7 @@ final class NotificationMenuControllerTests: XCTestCase {
     }
 
     func testConfiguredMenuCanEnableTelegram() throws {
-        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
         controller.menuWillOpen(controller.menu)
 
         XCTAssertTrue(controller.enableItem.isEnabled)
@@ -56,12 +58,12 @@ final class NotificationMenuControllerTests: XCTestCase {
 
         controller.toggleEnabled(controller.enableItem)
 
-        XCTAssertTrue(settings.isEnabled)
+        XCTAssertTrue(settings.isEnabled(.telegram))
         XCTAssertEqual(controller.enableItem.state, .on)
     }
 
     func testEventAndPhotoItemsReflectAndPersistSettings() throws {
-        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
         controller.menuWillOpen(controller.menu)
 
         XCTAssertEqual(controller.eventItems[.away]?.state, .on)
@@ -72,34 +74,34 @@ final class NotificationMenuControllerTests: XCTestCase {
         controller.togglePhoto(controller.photoItem)
 
         XCTAssertTrue(settings.isEventEnabled(.unlocked))
-        XCTAssertFalse(settings.takePhotoOnIntruded)
+        XCTAssertFalse(settings.takePhotoOnIntruded(.telegram))
     }
 
     func testConfigureLeavesExistingTokenWhenTokenFieldIsBlank() throws {
-        try settings.saveCredentials(replacementToken: "original", chatID: "old-chat")
+        try settings.saveTelegramCredentials(replacementToken: "original", chatID: "old-chat")
         dialogs.credentialInput = .init(replacementToken: nil, chatID: "new-chat")
 
         controller.configure()
 
         XCTAssertTrue(dialogs.requestWasOnMainThread)
         XCTAssertEqual(dialogs.hasStoredTokenValues, [true])
-        XCTAssertEqual(try settings.credentials(),
+        XCTAssertEqual(try settings.telegramCredentials(),
                        .init(token: "original", chatID: "new-chat"))
     }
 
     func testConfigureReplacesTokenWhenNewValueIsEntered() throws {
-        try settings.saveCredentials(replacementToken: "original", chatID: "old-chat")
+        try settings.saveTelegramCredentials(replacementToken: "original", chatID: "old-chat")
         dialogs.credentialInput = .init(replacementToken: " replacement ",
                                         chatID: "new-chat")
 
         controller.configure()
 
-        XCTAssertEqual(try settings.credentials(),
+        XCTAssertEqual(try settings.telegramCredentials(),
                        .init(token: "replacement", chatID: "new-chat"))
     }
 
     func testSendTestCallsServiceAndPresentsResult() throws {
-        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
         let presented = expectation(description: "Result presented")
         dialogs.onShowResult = { presented.fulfill() }
 
@@ -122,8 +124,8 @@ final class NotificationMenuControllerTests: XCTestCase {
     }
 
     func testLocationItemIsBelowPrivacyTextAndDisabledWhenPhotoIsOff() throws {
-        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
-        settings.takePhotoOnIntruded = false
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
+        settings.setTakePhotoOnIntruded(false, for: .telegram)
         controller.menuWillOpen(controller.menu)
 
         XCTAssertEqual(controller.menu.index(of: controller.locationItem),
@@ -143,13 +145,13 @@ final class NotificationMenuControllerTests: XCTestCase {
     func testEnablingLocationPersistsAndRequestsAuthorizationOnce() {
         controller.toggleLocation(controller.locationItem)
 
-        XCTAssertTrue(settings.attachMacLocation)
+        XCTAssertTrue(settings.attachMacLocation(.telegram))
         XCTAssertEqual(locationAuthorization.requestCalls, 1)
         XCTAssertEqual(controller.locationItem.state, .on)
 
         controller.toggleLocation(controller.locationItem)
 
-        XCTAssertFalse(settings.attachMacLocation)
+        XCTAssertFalse(settings.attachMacLocation(.telegram))
         XCTAssertEqual(locationAuthorization.requestCalls, 1)
     }
 
@@ -162,8 +164,8 @@ final class NotificationMenuControllerTests: XCTestCase {
         ))
 
         XCTAssertFalse(source.contains("settings.credentials()"))
-        XCTAssertFalse(source.contains("TelegramCredentials"))
-        XCTAssertTrue(source.contains("saveCredentials(replacementToken:"))
+        XCTAssertNil(source.range(of: #"\bTelegramCredentials\b"#, options: .regularExpression))
+        XCTAssertTrue(source.contains("saveTelegramCredentials(replacementToken:"))
     }
 }
 

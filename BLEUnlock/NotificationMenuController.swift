@@ -106,20 +106,20 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
-        let configured = (try? settings.isConfigured()) == true
+        let configured = (try? settings.isConfigured(.telegram)) == true
         enableItem.isEnabled = configured
         testItem.isEnabled = configured
-        enableItem.state = configured && settings.isEnabled ? .on : .off
+        enableItem.state = configured && settings.isEnabled(.telegram) ? .on : .off
         for (event, item) in eventItems {
             item.state = settings.isEventEnabled(event) ? .on : .off
         }
-        photoItem.state = settings.takePhotoOnIntruded ? .on : .off
-        locationItem.state = settings.attachMacLocation ? .on : .off
-        locationItem.isEnabled = settings.takePhotoOnIntruded
+        photoItem.state = settings.takePhotoOnIntruded(.telegram) ? .on : .off
+        locationItem.state = settings.attachMacLocation(.telegram) ? .on : .off
+        locationItem.isEnabled = settings.takePhotoOnIntruded(.telegram)
 
         if !configured {
             statusItem.title = t("notification_status_not_configured")
-        } else if settings.isEnabled {
+        } else if settings.isEnabled(.telegram) {
             statusItem.title = t("notification_status_enabled")
         } else {
             statusItem.title = t("notification_status_disabled")
@@ -127,11 +127,11 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
     }
 
     @objc internal func toggleEnabled(_ item: NSMenuItem) {
-        guard (try? settings.isConfigured()) == true else {
+        guard (try? settings.isConfigured(.telegram)) == true else {
             menuWillOpen(menu)
             return
         }
-        settings.isEnabled.toggle()
+        settings.setEnabled(!settings.isEnabled(.telegram), for: .telegram)
         menuWillOpen(menu)
     }
 
@@ -142,17 +142,17 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
     }
 
     @objc internal func togglePhoto(_ item: NSMenuItem) {
-        settings.takePhotoOnIntruded.toggle()
+        settings.setTakePhotoOnIntruded(!settings.takePhotoOnIntruded(.telegram), for: .telegram)
         menuWillOpen(menu)
     }
 
     @objc internal func toggleLocation(_ item: NSMenuItem) {
-        guard settings.takePhotoOnIntruded else {
+        guard settings.takePhotoOnIntruded(.telegram) else {
             menuWillOpen(menu)
             return
         }
-        settings.attachMacLocation.toggle()
-        if settings.attachMacLocation {
+        settings.setAttachMacLocation(!settings.attachMacLocation(.telegram), for: .telegram)
+        if settings.attachMacLocation(.telegram) {
             locationAuthorization.requestAuthorization()
         }
         menuWillOpen(menu)
@@ -161,7 +161,7 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
     @objc internal func configure() {
         let configured: Bool
         do {
-            configured = try settings.isConfigured()
+            configured = try settings.isConfigured(.telegram)
         } catch {
             dialogs.showResult(title: t("notification_configure"),
                                message: t("notification_error_settings_unavailable"))
@@ -172,9 +172,9 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
             guard let input = input else { return }
 
             do {
-                try self.settings.saveCredentials(replacementToken: input.replacementToken,
-                                                  chatID: input.chatID)
-                guard try self.settings.isConfigured() else {
+                try self.settings.saveTelegramCredentials(replacementToken: input.replacementToken,
+                                                          chatID: input.chatID)
+                guard try self.settings.isConfigured(.telegram) else {
                     self.dialogs.showResult(
                         title: t("notification_configure"),
                         message: t("notification_error_not_configured")

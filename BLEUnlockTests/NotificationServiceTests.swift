@@ -20,7 +20,9 @@ final class NotificationServiceTests: XCTestCase {
         defaultsSuiteName = "jp.sone.BLEUnlockTests.TelegramNotificationService.\(UUID())"
         defaults = UserDefaults(suiteName: defaultsSuiteName)
         defaults.removePersistentDomain(forName: defaultsSuiteName)
-        settings = NotificationSettings(defaults: defaults, secrets: MemorySecretStore())
+        settings = NotificationSettings(defaults: defaults,
+                                       telegramSecrets: MemorySecretStore(),
+                                       synologySecrets: MemorySecretStore())
         sender = RecordingTelegramSender()
         camera = StubPhotoCapturer()
         location = StubMacLocationProvider()
@@ -51,7 +53,7 @@ final class NotificationServiceTests: XCTestCase {
     }
 
     func testDisabledTelegramDoesNothing() throws {
-        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
 
         service.handle(context(event: .intruded))
 
@@ -59,7 +61,7 @@ final class NotificationServiceTests: XCTestCase {
     }
 
     func testUnconfiguredTelegramDoesNothing() {
-        settings.isEnabled = true
+        settings.setEnabled(true, for: .telegram)
 
         service.handle(context(event: .intruded))
 
@@ -72,8 +74,9 @@ final class NotificationServiceTests: XCTestCase {
                               code: 17,
                               userInfo: [NSLocalizedDescriptionKey: "Could not read \(secret)"])
         settings = NotificationSettings(defaults: defaults,
-                                        secrets: ThrowingSecretStore(error: failure))
-        settings.isEnabled = true
+                                        telegramSecrets: ThrowingSecretStore(error: failure),
+                                        synologySecrets: MemorySecretStore())
+        settings.setEnabled(true, for: .telegram)
         service = NotificationService(
             settings: settings,
             sender: sender,
@@ -186,7 +189,7 @@ final class NotificationServiceTests: XCTestCase {
 
     func testLocationEnabledSendsCaptionedPhotoThenNativeMap() throws {
         try configure()
-        settings.attachMacLocation = true
+        settings.setAttachMacLocation(true, for: .telegram)
         camera.result = .success(photoURL)
         let validLocation = TelegramLocation(latitude: 25.033,
                                              longitude: 121.5654,
@@ -204,7 +207,7 @@ final class NotificationServiceTests: XCTestCase {
 
     func testLocationDisabledNeverCallsProviderOrSendsMap() throws {
         try configure()
-        settings.attachMacLocation = false
+        settings.setAttachMacLocation(false, for: .telegram)
         camera.result = .success(photoURL)
 
         service.handle(context(event: .intruded))
@@ -216,7 +219,7 @@ final class NotificationServiceTests: XCTestCase {
 
     func testLocationFailureSendsPhotoWithUnavailableCaptionAndNoMap() throws {
         try configure()
-        settings.attachMacLocation = true
+        settings.setAttachMacLocation(true, for: .telegram)
         camera.result = .success(photoURL)
         location.result = .failure(.timeout)
 
@@ -230,7 +233,7 @@ final class NotificationServiceTests: XCTestCase {
 
     func testLocatedCameraFailureCancelsLocationAndUsesTextFallbackWithoutCoordinates() throws {
         try configure()
-        settings.attachMacLocation = true
+        settings.setAttachMacLocation(true, for: .telegram)
         camera.result = .failure(.denied)
         location.result = .success(.init(latitude: 25.033,
                                          longitude: 121.5654,
@@ -249,7 +252,7 @@ final class NotificationServiceTests: XCTestCase {
 
     func testPhotoUploadFailureDoesNotSendNativeMapAndCleansFile() throws {
         try configure()
-        settings.attachMacLocation = true
+        settings.setAttachMacLocation(true, for: .telegram)
         camera.result = .success(photoURL)
         location.result = .success(.init(latitude: 25.033,
                                          longitude: 121.5654,
@@ -266,7 +269,7 @@ final class NotificationServiceTests: XCTestCase {
 
     func testNativeMapFailureReportsWithoutResendingPhoto() throws {
         try configure()
-        settings.attachMacLocation = true
+        settings.setAttachMacLocation(true, for: .telegram)
         camera.result = .success(photoURL)
         location.result = .success(.init(latitude: 25.033,
                                          longitude: 121.5654,
@@ -284,8 +287,8 @@ final class NotificationServiceTests: XCTestCase {
     }
 
     func testLocatedTestNotificationUsesOneTimestampForCaptionAndLocation() throws {
-        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
-        settings.attachMacLocation = true
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
+        settings.setAttachMacLocation(true, for: .telegram)
         camera.result = .success(photoURL)
         location.result = .success(.init(latitude: 25.033,
                                          longitude: 121.5654,
@@ -311,7 +314,7 @@ final class NotificationServiceTests: XCTestCase {
     }
 
     func testTestNotificationUsesPhotoSetting() throws {
-        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
         camera.result = .success(photoURL)
         var photoResult: Result<Void, Error>?
 
@@ -323,7 +326,7 @@ final class NotificationServiceTests: XCTestCase {
         XCTAssertEqual(sender.textCalls.count, 0)
         XCTAssertEqual(remover.calls, [photoURL])
 
-        settings.takePhotoOnIntruded = false
+        settings.setTakePhotoOnIntruded(false, for: .telegram)
         var textResult: Result<Void, Error>?
         service.sendTest(hostName: "Fred-Mac") { textResult = $0 }
 
@@ -334,7 +337,7 @@ final class NotificationServiceTests: XCTestCase {
     }
 
     func testPhotoEnabledTestSurfacesCaptureFailureAfterTextFallback() throws {
-        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
         camera.result = .failure(.denied)
         var result: Result<Void, Error>?
 
@@ -442,8 +445,8 @@ final class NotificationServiceTests: XCTestCase {
     }
 
     private func configure() throws {
-        try settings.saveCredentials(replacementToken: "token", chatID: "chat")
-        settings.isEnabled = true
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
+        settings.setEnabled(true, for: .telegram)
     }
 
     private func context(event: NotificationEvent, rssi: Int? = nil) -> NotificationEventContext {
