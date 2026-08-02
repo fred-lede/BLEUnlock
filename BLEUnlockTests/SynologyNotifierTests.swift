@@ -123,8 +123,8 @@ final class SynologyNotifierTests: XCTestCase {
 
         transport.results = [
             .success((Data(#"{"success":true,"data":{"sid":"sid-SECRET","synotoken":"token-SECRET"}}"#.utf8), response())),
-            .success((Data(#"{"success":true,"data":{"file_id":"file-123"}}"#.utf8), response())),
-            .success((Data(#"{"success":true,"data":{"post_id":"post-1"}}"#.utf8), response()))
+            .success((Data(#"{"success":true,"data":{"post_id":25769803789,"file_props":{"name":"capture.jpg"}}}"#.utf8), response())),
+            .success((Data(#"{"success":true,"data":{"post_id":25769803790}}"#.utf8), response()))
         ]
         let done = expectation(description: "completion")
 
@@ -176,8 +176,8 @@ final class SynologyNotifierTests: XCTestCase {
         XCTAssertEqual(query.first(where: { $0.name == "_sid" })?.value, "sid-SECRET")
         XCTAssertEqual(post.value(forHTTPHeaderField: "X-SYNO-TOKEN"), "token-SECRET")
         let postBody = String(decoding: try XCTUnwrap(post.httpBody), as: UTF8.self)
-        XCTAssertTrue(postBody.contains("file_id=file-123"))
         XCTAssertTrue(postBody.contains("message=Door%20opened"))
+        XCTAssertFalse(postBody.contains("file_id"))
     }
 
     func testSendPhotoLoginFailureMapsToLoginFailedWithoutFurtherRequests() throws {
@@ -231,6 +231,33 @@ final class SynologyNotifierTests: XCTestCase {
         XCTAssertEqual(transport.requests.count, 2)
     }
 
+    func testSendPhotoUploadWithoutPostDataMapsToUploadFailed() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let photoURL = directory.appendingPathComponent("capture.jpg")
+        try Data([0xFF, 0xD8, 0xFF, 0xD9]).write(to: photoURL)
+
+        transport.results = [
+            .success((Data(#"{"success":true,"data":{"sid":"sid-SECRET","synotoken":"token-SECRET"}}"#.utf8), response())),
+            .success((Data(#"{"success":true}"#.utf8), response()))
+        ]
+        let done = expectation(description: "completion")
+
+        notifier.sendPhoto(credentials: credentials, photoURL: photoURL, caption: "x") { result in
+            defer { done.fulfill() }
+            guard case .failure(let error) = result else {
+                return XCTFail("Expected failure")
+            }
+            XCTAssertEqual(error, .uploadFailed)
+            self.assertSanitized(error)
+        }
+
+        wait(for: [done], timeout: 1)
+        XCTAssertEqual(transport.requests.count, 2)
+    }
+
     func testSendPhotoPostFailureMapsToPostFailed() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -241,7 +268,7 @@ final class SynologyNotifierTests: XCTestCase {
 
         transport.results = [
             .success((Data(#"{"success":true,"data":{"sid":"sid-SECRET","synotoken":"token-SECRET"}}"#.utf8), response())),
-            .success((Data(#"{"success":true,"data":{"file_id":"file-123"}}"#.utf8), response())),
+            .success((Data(#"{"success":true,"data":{"post_id":25769803789,"file_props":{"name":"capture.jpg"}}}"#.utf8), response())),
             .success((Data(#"{"success":false,"error":{"code":119}}"#.utf8), response()))
         ]
         let done = expectation(description: "completion")

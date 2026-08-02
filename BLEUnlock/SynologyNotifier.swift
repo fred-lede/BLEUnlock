@@ -68,7 +68,7 @@ private struct SynologySuccessResponse: Decodable {
 }
 
 private struct SynologyPostData: Decodable {
-    let file_id: String?
+    let post_id: Int64?
 }
 
 private struct SynologySession {
@@ -155,15 +155,14 @@ final class SynologyNotifier: SynologySending {
                         }
                         guard let decoded = try? JSONDecoder().decode(SynologySuccessResponse.self, from: data),
                               decoded.success,
-                              let fileID = decoded.data?.file_id, !fileID.isEmpty else {
+                              decoded.data?.post_id != nil else {
                             completion(.failure(.uploadFailed))
                             return
                         }
                         guard let postRequest = self.makePostRequest(baseURL: baseURL,
                                                                      session: session,
                                                                      credentials: credentials,
-                                                                     caption: caption,
-                                                                     fileID: fileID) else {
+                                                                     caption: caption) else {
                             completion(.failure(.invalidRequest))
                             return
                         }
@@ -271,8 +270,7 @@ final class SynologyNotifier: SynologySending {
     private func makePostRequest(baseURL: URL,
                                  session: SynologySession,
                                  credentials: SynologyCredentials,
-                                 caption: String,
-                                 fileID: String) -> URLRequest? {
+                                 caption: String) -> URLRequest? {
         guard let url = entryURL(baseURL: baseURL,
                                  session: session,
                                  channelID: credentials.channelID) else { return nil }
@@ -281,8 +279,7 @@ final class SynologyNotifier: SynologySending {
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.setValue(session.synoToken, forHTTPHeaderField: "X-SYNO-TOKEN")
         request.httpBody = formEncoded([
-            ("message", caption),
-            ("file_id", fileID)
+            ("message", caption)
         ])
         return request
     }

@@ -110,9 +110,9 @@ New `SynologyNotifier` conforming to a `SynologySending` protocol:
 
 - `sendText(credentials, text, completion)` — POST the webhook URL with `payload={"text": "..."}` form-encoded (confirmed by the official Synology KB; the KB also accepts a raw JSON body, but the form-encoded `payload` form is the most widely tested). Success is `{"success": true}`. The official KB supports file sharing only via a public `file_url` (32 MB max), which cannot reference a local photo, so photo delivery uses the undocumented `SYNO.Chat.Post` API below.
 - `sendPhoto(credentials, photoURL, caption, completion)`:
-  1. Login `SYNO.API.Auth` (version 6, `method=login`, `account`, `passwd`, `session=Chat`, `format=sid`) at the host parsed from the webhook URL → `sid`.
-  2. Upload via `SYNO.Chat.Post` (`method=create`, version 5) multipart with `_sid`, `channel_id`, and the photo file → `file_id`.
-  3. Create the post via `SYNO.Chat.Post` (`method=create`, version 5) with `_sid`, `channel_id`, `message=caption`, `file_id`.
+  1. Login `SYNO.API.Auth` (version 6, `method=login`, `account`, `passwd`, `session=Chat`, `format=sid`) at the host parsed from the webhook URL → `sid` + `synotoken`.
+  2. Upload via `SYNO.Chat.Post` (`method=create`, version 5) multipart with `_sid`, `channel_id`, multipart fields `type=file`, `message=""`, `conn_id=""`, and the photo as the `file` part. This immediately creates the photo post in the channel; the response carries the created post (`post_id`, `file_props`), **not** a `file_id` (confirmed live on DSM 7.3.2 VirtualDSM, `SYNO.Chat.Post` maxVersion 8). The multipart `message` field is ignored, so the caption cannot ride along.
+  3. Send the caption as a separate text post via `SYNO.Chat.Post` (`method=create`, version 5) form POST with `_sid`, `channel_id`, `message=caption` (no `file_id`). Success is `{"success": true}`; a non-empty caption always produces the text post after the photo.
 
 DSM API token usage requires no special program handling: the login call is identical, and the token is simply entered in the password field.
 
