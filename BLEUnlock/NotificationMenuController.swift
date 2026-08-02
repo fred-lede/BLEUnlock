@@ -2,8 +2,10 @@ import AppKit
 import Foundation
 
 protocol NotificationDialogPresenting {
-    func requestCredentials(hasStoredToken: Bool,
-                            completion: (TelegramCredentialInput?) -> Void)
+    func requestTelegramCredentials(hasStoredToken: Bool,
+                                    completion: (TelegramCredentialInput?) -> Void)
+    func requestSynologyCredentials(hasStoredPassword: Bool,
+                                    completion: (SynologyCredentialInput?) -> Void)
     func showResult(title: String, message: String)
 }
 
@@ -12,8 +14,16 @@ struct TelegramCredentialInput {
     let chatID: String
 }
 
+struct SynologyCredentialInput {
+    let webhookURL: String
+    let username: String
+    let password: String?
+    let channelID: String
+}
+
 final class NotificationMenuController: NSObject, NSMenuDelegate {
     let menu = NSMenu()
+    let channelItems: [NotificationChannel: NSMenuItem]
     let enableItem: NSMenuItem
     let testItem: NSMenuItem
     let statusItem: NSMenuItem
@@ -40,6 +50,26 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
         self.dialogs = dialogs
         self.locationAuthorization = locationAuthorization
         self.hostName = hostName
+
+        let channelMenu = NSMenu()
+        channelMenu.autoenablesItems = false
+        var builtChannelItems: [NotificationChannel: NSMenuItem] = [:]
+        for channel in NotificationChannel.allCases {
+            let key = channel == .telegram
+                ? "notification_channel_telegram"
+                : "notification_channel_synology_chat"
+            let item = NSMenuItem(title: t(key),
+                                  action: #selector(selectChannel(_:)),
+                                  keyEquivalent: "")
+            builtChannelItems[channel] = item
+            channelMenu.addItem(item)
+        }
+        channelItems = builtChannelItems
+
+        let channelItem = NSMenuItem(title: t("notification_channel"),
+                                     action: nil,
+                                     keyEquivalent: "")
+        channelItem.submenu = channelMenu
 
         enableItem = NSMenuItem(title: t("notification_enable"),
                                 action: #selector(toggleEnabled(_:)),
@@ -84,6 +114,7 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
 
         super.init()
 
+        channelItems.values.forEach { $0.target = self }
         enableItem.target = self
         configureItem.target = self
         testItem.target = self
@@ -93,6 +124,7 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
 
         menu.autoenablesItems = false
         menu.delegate = self
+        menu.addItem(channelItem)
         menu.addItem(enableItem)
         menu.addItem(configureItem)
         menu.addItem(testItem)
@@ -106,32 +138,46 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
-        let configured = (try? settings.isConfigured(.telegram)) == true
+        let channel = settings.selectedChannel
+        for (candidate, item) in channelItems {
+            item.state = candidate == channel ? .on : .off
+        }
+        let configured = (try? settings.isConfigured(channel)) == true
         enableItem.isEnabled = configured
         testItem.isEnabled = configured
-        enableItem.state = configured && settings.isEnabled(.telegram) ? .on : .off
+        enableItem.state = configured && settings.isEnabled(channel) ? .on : .off
         for (event, item) in eventItems {
             item.state = settings.isEventEnabled(event) ? .on : .off
         }
-        photoItem.state = settings.takePhotoOnIntruded(.telegram) ? .on : .off
-        locationItem.state = settings.attachMacLocation(.telegram) ? .on : .off
-        locationItem.isEnabled = settings.takePhotoOnIntruded(.telegram)
+        photoItem.state = settings.takePhotoOnIntruded(channel) ? .on : .off
+        privacyItem.title = channel == .telegram
+            ? t("telegram_camera_privacy")
+            : t("notification_camera_privacy_synology")
+        locationItem.state = settings.attachMacLocation(channel) ? .on : .off
+        locationItem.isEnabled = settings.takePhotoOnIntruded(channel)
 
         if !configured {
             statusItem.title = t("notification_status_not_configured")
-        } else if settings.isEnabled(.telegram) {
+        } else if settings.isEnabled(channel) {
             statusItem.title = t("notification_status_enabled")
         } else {
             statusItem.title = t("notification_status_disabled")
         }
     }
 
+    @objc internal func selectChannel(_ item: NSMenuItem) {
+        guard let channel = channelItems.first(where: { $0.value === item })?.key else { return }
+        settings.selectedChannel = channel
+        menuWillOpen(menu)
+    }
+
     @objc internal func toggleEnabled(_ item: NSMenuItem) {
-        guard (try? settings.isConfigured(.telegram)) == true else {
+        let channel = settings.selectedChannel
+        guard (try? settings.isConfigured(channel)) == true else {
             menuWillOpen(menu)
             return
         }
-        settings.setEnabled(!settings.isEnabled(.telegram), for: .telegram)
+        settings.setEnabled(!settings.isEnabled(channel), for: channel)
         menuWillOpen(menu)
     }
 
@@ -142,23 +188,34 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
     }
 
     @objc internal func togglePhoto(_ item: NSMenuItem) {
-        settings.setTakePhotoOnIntruded(!settings.takePhotoOnIntruded(.telegram), for: .telegram)
+        let channel = settings.selectedChannel
+        settings.setTakePhotoOnIntruded(!settings.takePhotoOnIntruded(channel), for: channel)
         menuWillOpen(menu)
     }
 
     @objc internal func toggleLocation(_ item: NSMenuItem) {
-        guard settings.takePhotoOnIntruded(.telegram) else {
+        let channel = settings.selectedChannel
+        guard settings.takePhotoOnIntruded(channel) else {
             menuWillOpen(menu)
             return
         }
-        settings.setAttachMacLocation(!settings.attachMacLocation(.telegram), for: .telegram)
-        if settings.attachMacLocation(.telegram) {
+        settings.setAttachMacLocation(!settings.attachMacLocation(channel), for: channel)
+        if settings.attachMacLocation(channel) {
             locationAuthorization.requestAuthorization()
         }
         menuWillOpen(menu)
     }
 
     @objc internal func configure() {
+        switch settings.selectedChannel {
+        case .telegram:
+            configureTelegram()
+        case .synologyChat:
+            configureSynology()
+        }
+    }
+
+    private func configureTelegram() {
         let configured: Bool
         do {
             configured = try settings.isConfigured(.telegram)
@@ -168,13 +225,44 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
             return
         }
 
-        dialogs.requestCredentials(hasStoredToken: configured) { input in
+        dialogs.requestTelegramCredentials(hasStoredToken: configured) { input in
             guard let input = input else { return }
-
             do {
                 try self.settings.saveTelegramCredentials(replacementToken: input.replacementToken,
                                                           chatID: input.chatID)
                 guard try self.settings.isConfigured(.telegram) else {
+                    self.dialogs.showResult(
+                        title: t("notification_configure"),
+                        message: t("notification_error_not_configured")
+                    )
+                    return
+                }
+                self.menuWillOpen(self.menu)
+            } catch {
+                self.dialogs.showResult(title: t("notification_configure"),
+                                        message: error.localizedDescription)
+            }
+        }
+    }
+
+    private func configureSynology() {
+        let configured: Bool
+        do {
+            configured = try settings.isConfigured(.synologyChat)
+        } catch {
+            dialogs.showResult(title: t("notification_configure"),
+                               message: t("notification_error_settings_unavailable"))
+            return
+        }
+
+        dialogs.requestSynologyCredentials(hasStoredPassword: configured) { input in
+            guard let input = input else { return }
+            do {
+                try self.settings.saveSynologyCredentials(webhookURL: input.webhookURL,
+                                                          username: input.username,
+                                                          password: input.password,
+                                                          channelID: input.channelID)
+                guard try self.settings.isConfigured(.synologyChat) else {
                     self.dialogs.showResult(
                         title: t("notification_configure"),
                         message: t("notification_error_not_configured")
@@ -222,8 +310,8 @@ final class NotificationMenuController: NSObject, NSMenuDelegate {
 }
 
 final class AppKitNotificationDialogPresenter: NotificationDialogPresenting {
-    func requestCredentials(hasStoredToken: Bool,
-                            completion: (TelegramCredentialInput?) -> Void) {
+    func requestTelegramCredentials(hasStoredToken: Bool,
+                                    completion: (TelegramCredentialInput?) -> Void) {
         precondition(Thread.isMainThread)
 
         let alert = NSAlert()
@@ -269,6 +357,65 @@ final class AppKitNotificationDialogPresenter: NotificationDialogPresenting {
         let token = tokenField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         completion(.init(replacementToken: token.isEmpty ? nil : token,
                          chatID: chatIDField.stringValue))
+    }
+
+    func requestSynologyCredentials(hasStoredPassword: Bool,
+                                    completion: (SynologyCredentialInput?) -> Void) {
+        precondition(Thread.isMainThread)
+
+        let alert = NSAlert()
+        alert.window.title = "BLEUnlock"
+        alert.messageText = t("notification_configure")
+        alert.addButton(withTitle: t("notification_save"))
+        alert.addButton(withTitle: t("cancel"))
+
+        let explanation = NSTextField(wrappingLabelWithString: t("synology_setup_help"))
+        explanation.preferredMaxLayoutWidth = 360
+        let privacy = NSTextField(wrappingLabelWithString: t("notification_camera_privacy_synology"))
+        privacy.preferredMaxLayoutWidth = 360
+
+        let urlLabel = NSTextField(labelWithString: t("synology_webhook_url"))
+        let urlField = NSTextField()
+        let usernameLabel = NSTextField(labelWithString: t("synology_username"))
+        let usernameField = NSTextField()
+        let passwordLabel = NSTextField(labelWithString: t("synology_password"))
+        let passwordField = NSSecureTextField()
+        passwordField.stringValue = ""
+        passwordField.placeholderString = hasStoredPassword ? nil : t("synology_password")
+        let channelIDLabel = NSTextField(labelWithString: t("synology_channel_id"))
+        let channelIDField = NSTextField()
+
+        let stack = NSStackView(views: [explanation,
+                                        privacy,
+                                        urlLabel,
+                                        urlField,
+                                        usernameLabel,
+                                        usernameField,
+                                        passwordLabel,
+                                        passwordField,
+                                        channelIDLabel,
+                                        channelIDField])
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        stack.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+        stack.frame = NSRect(x: 0, y: 0, width: 360, height: 330)
+        for field in [urlField, usernameField, passwordField, channelIDField] {
+            field.widthAnchor.constraint(equalToConstant: 360).isActive = true
+        }
+        alert.accessoryView = stack
+
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            completion(nil)
+            return
+        }
+
+        let password = passwordField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        completion(.init(webhookURL: urlField.stringValue,
+                         username: usernameField.stringValue,
+                         password: password.isEmpty ? nil : password,
+                         channelID: channelIDField.stringValue))
     }
 
     func showResult(title: String, message: String) {

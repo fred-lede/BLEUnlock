@@ -13,12 +13,12 @@ final class NotificationMenuControllerTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        defaultsSuiteName = "jp.sone.BLEUnlockTests.TelegramMenuController.\(UUID())"
+        defaultsSuiteName = "jp.sone.BLEUnlockTests.NotificationMenuController.\(UUID())"
         defaults = UserDefaults(suiteName: defaultsSuiteName)!
         defaults.removePersistentDomain(forName: defaultsSuiteName)
         settings = NotificationSettings(defaults: defaults,
-                                       telegramSecrets: MemorySecretStore(),
-                                       synologySecrets: MemorySecretStore())
+                                        telegramSecrets: MemorySecretStore(),
+                                        synologySecrets: MemorySecretStore())
         service = RecordingNotificationService()
         dialogs = RecordingNotificationDialogPresenter()
         locationAuthorization = RecordingLocationAuthorizationRequester()
@@ -49,7 +49,20 @@ final class NotificationMenuControllerTests: XCTestCase {
         XCTAssertEqual(controller.statusItem.title, t("notification_status_not_configured"))
     }
 
-    func testConfiguredMenuCanEnableTelegram() throws {
+    func testChannelRadioReflectsSelectionAndSwitchingPersists() throws {
+        controller.menuWillOpen(controller.menu)
+
+        XCTAssertEqual(controller.channelItems[.telegram]?.state, .on)
+        XCTAssertEqual(controller.channelItems[.synologyChat]?.state, .off)
+
+        controller.selectChannel(controller.channelItems[.synologyChat]!)
+
+        XCTAssertEqual(settings.selectedChannel, .synologyChat)
+        XCTAssertEqual(controller.channelItems[.telegram]?.state, .off)
+        XCTAssertEqual(controller.channelItems[.synologyChat]?.state, .on)
+    }
+
+    func testConfiguredMenuCanEnableSelectedChannel() throws {
         try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
         controller.menuWillOpen(controller.menu)
 
@@ -62,7 +75,36 @@ final class NotificationMenuControllerTests: XCTestCase {
         XCTAssertEqual(controller.enableItem.state, .on)
     }
 
-    func testEventAndPhotoItemsReflectAndPersistSettings() throws {
+    func testEnableStateReflectsSynologyChannelWhenSelected() throws {
+        try settings.saveSynologyCredentials(webhookURL: "https://nas.local",
+                                             username: "u",
+                                             password: "p",
+                                             channelID: "1")
+        settings.setEnabled(true, for: .synologyChat)
+        controller.selectChannel(controller.channelItems[.synologyChat]!)
+
+        XCTAssertTrue(controller.enableItem.isEnabled)
+        XCTAssertEqual(controller.enableItem.state, .on)
+    }
+
+    func testPerChannelTogglesWriteOnlyToSelectedChannel() throws {
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
+        try settings.saveSynologyCredentials(webhookURL: "https://nas.local",
+                                             username: "u",
+                                             password: "p",
+                                             channelID: "1")
+        controller.selectChannel(controller.channelItems[.synologyChat]!)
+
+        controller.toggleLocation(controller.locationItem)
+        controller.togglePhoto(controller.photoItem)
+
+        XCTAssertFalse(settings.takePhotoOnIntruded(.synologyChat))
+        XCTAssertTrue(settings.attachMacLocation(.synologyChat))
+        XCTAssertTrue(settings.takePhotoOnIntruded(.telegram),
+                      "Telegram photo preference must not change")
+    }
+
+    func testEventAndPhotoItemsReflectSettings() throws {
         try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
         controller.menuWillOpen(controller.menu)
 
@@ -77,9 +119,9 @@ final class NotificationMenuControllerTests: XCTestCase {
         XCTAssertFalse(settings.takePhotoOnIntruded(.telegram))
     }
 
-    func testConfigureLeavesExistingTokenWhenTokenFieldIsBlank() throws {
+    func testConfigureLeavesExistingTelegramTokenWhenTokenFieldIsBlank() throws {
         try settings.saveTelegramCredentials(replacementToken: "original", chatID: "old-chat")
-        dialogs.credentialInput = .init(replacementToken: nil, chatID: "new-chat")
+        dialogs.telegramInput = .init(replacementToken: nil, chatID: "new-chat")
 
         controller.configure()
 
@@ -89,15 +131,32 @@ final class NotificationMenuControllerTests: XCTestCase {
                        .init(token: "original", chatID: "new-chat"))
     }
 
-    func testConfigureReplacesTokenWhenNewValueIsEntered() throws {
+    func testConfigureReplacesTelegramTokenWhenNewValueIsEntered() throws {
         try settings.saveTelegramCredentials(replacementToken: "original", chatID: "old-chat")
-        dialogs.credentialInput = .init(replacementToken: " replacement ",
-                                        chatID: "new-chat")
+        dialogs.telegramInput = .init(replacementToken: " replacement ", chatID: "new-chat")
 
         controller.configure()
 
         XCTAssertEqual(try settings.telegramCredentials(),
                        .init(token: "replacement", chatID: "new-chat"))
+    }
+
+    func testConfigureRoutesToSynologyDialogWhenSynologySelected() throws {
+        controller.selectChannel(controller.channelItems[.synologyChat]!)
+        dialogs.synologyInput = .init(webhookURL: "https://nas.local",
+                                      username: "user",
+                                      password: "pass",
+                                      channelID: "42")
+
+        controller.configure()
+
+        XCTAssertEqual(dialogs.synologyRequests, 1)
+        XCTAssertEqual(try settings.synologyCredentials(),
+                       SynologyCredentials(webhookURL: "https://nas.local",
+                                           username: "user",
+                                           password: "pass",
+                                           channelID: "42"))
+        XCTAssertEqual(dialogs.telegramRequests, 0)
     }
 
     func testSendTestCallsServiceAndPresentsResult() throws {
@@ -114,13 +173,26 @@ final class NotificationMenuControllerTests: XCTestCase {
         XCTAssertTrue(dialogs.showResultWasOnMainThread)
     }
 
-    func testCameraPrivacyExplanationIsVisibleAdjacentToPhotoToggle() {
+    func testCameraPrivacyExplanationIsVisibleAdjacentToPhotoToggle() throws {
+        try settings.saveTelegramCredentials(replacementToken: "token", chatID: "chat")
         let photoIndex = controller.menu.index(of: controller.photoItem)
         let privacyIndex = controller.menu.index(of: controller.privacyItem)
 
         XCTAssertEqual(privacyIndex, photoIndex + 1)
         XCTAssertEqual(controller.privacyItem.title, t("telegram_camera_privacy"))
         XCTAssertFalse(controller.privacyItem.isEnabled)
+    }
+
+    func testSynologyPrivacyLineShowsWhenSynologySelected() throws {
+        try settings.saveSynologyCredentials(webhookURL: "https://nas.local",
+                                             username: "u",
+                                             password: "p",
+                                             channelID: "1")
+        controller.selectChannel(controller.channelItems[.synologyChat]!)
+        controller.menuWillOpen(controller.menu)
+
+        XCTAssertEqual(controller.privacyItem.title,
+                       t("notification_camera_privacy_synology"))
     }
 
     func testLocationItemIsBelowPrivacyTextAndDisabledWhenPhotoIsOff() throws {
@@ -155,7 +227,7 @@ final class NotificationMenuControllerTests: XCTestCase {
         XCTAssertEqual(locationAuthorization.requestCalls, 1)
     }
 
-    func testControllerDoesNotReadOrRetainTelegramCredentials() throws {
+    func testControllerDoesNotReadOrRetainCredentials() throws {
         let repository = URL(fileURLWithPath: #file)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -164,8 +236,12 @@ final class NotificationMenuControllerTests: XCTestCase {
         ))
 
         XCTAssertFalse(source.contains("settings.credentials()"))
+        XCTAssertFalse(source.contains("settings.synologyCredentials()"))
+        XCTAssertFalse(source.contains("settings.telegramCredentials()"))
         XCTAssertNil(source.range(of: #"\bTelegramCredentials\b"#, options: .regularExpression))
+        XCTAssertNil(source.range(of: #"\bSynologyCredentials\b"#, options: .regularExpression))
         XCTAssertTrue(source.contains("saveTelegramCredentials(replacementToken:"))
+        XCTAssertTrue(source.contains("saveSynologyCredentials(webhookURL:"))
     }
 }
 
@@ -205,18 +281,29 @@ private final class RecordingNotificationDialogPresenter: NotificationDialogPres
         let message: String
     }
 
-    var credentialInput: TelegramCredentialInput?
+    var telegramInput: TelegramCredentialInput?
+    var synologyInput: SynologyCredentialInput?
     private(set) var hasStoredTokenValues: [Bool] = []
+    private(set) var telegramRequests = 0
+    private(set) var synologyRequests = 0
     private(set) var results: [PresentedResult] = []
     private(set) var requestWasOnMainThread = false
     private(set) var showResultWasOnMainThread = false
     var onShowResult: (() -> Void)?
 
-    func requestCredentials(hasStoredToken: Bool,
-                            completion: (TelegramCredentialInput?) -> Void) {
+    func requestTelegramCredentials(hasStoredToken: Bool,
+                                    completion: (TelegramCredentialInput?) -> Void) {
         requestWasOnMainThread = Thread.isMainThread
         hasStoredTokenValues.append(hasStoredToken)
-        completion(credentialInput)
+        telegramRequests += 1
+        completion(telegramInput)
+    }
+
+    func requestSynologyCredentials(hasStoredPassword: Bool,
+                                    completion: (SynologyCredentialInput?) -> Void) {
+        requestWasOnMainThread = Thread.isMainThread
+        synologyRequests += 1
+        completion(synologyInput)
     }
 
     func showResult(title: String, message: String) {
