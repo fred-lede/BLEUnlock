@@ -109,7 +109,7 @@ Rename `TelegramNotificationService` to `NotificationService`, implementing `Not
 
 New `SynologyNotifier` conforming to a `SynologySending` protocol:
 
-- `sendText(credentials, text, completion)` — POST `payload={"text": "..."}` (form-encoded) to the webhook URL. Success is `{"success": true}`.
+- `sendText(credentials, text, completion)` — POST the webhook URL with `payload={"text": "..."}` form-encoded (confirmed by the official Synology KB; the KB also accepts a raw JSON body, but the form-encoded `payload` form is the most widely tested). Success is `{"success": true}`. The official KB supports file sharing only via a public `file_url` (32 MB max), which cannot reference a local photo, so photo delivery uses the undocumented `SYNO.Chat.Post` API below.
 - `sendPhoto(credentials, photoURL, caption, completion)`:
   1. Login `SYNO.API.Auth` (version 6, `method=login`, `account`, `passwd`, `session=Chat`, `format=sid`) at the host parsed from the webhook URL → `sid`.
   2. Upload via `SYNO.Chat.Post` (`method=create`, version 5) multipart with `_sid`, `channel_id`, and the photo file → `file_id`.
