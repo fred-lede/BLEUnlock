@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-protocol TelegramDialogPresenting {
+protocol NotificationDialogPresenting {
     func requestCredentials(hasStoredToken: Bool,
                             completion: (TelegramCredentialInput?) -> Void)
     func showResult(title: String, message: String)
@@ -12,27 +12,27 @@ struct TelegramCredentialInput {
     let chatID: String
 }
 
-final class TelegramMenuController: NSObject, NSMenuDelegate {
+final class NotificationMenuController: NSObject, NSMenuDelegate {
     let menu = NSMenu()
     let enableItem: NSMenuItem
     let testItem: NSMenuItem
     let statusItem: NSMenuItem
-    let eventItems: [TelegramEvent: NSMenuItem]
+    let eventItems: [NotificationEvent: NSMenuItem]
     let photoItem: NSMenuItem
     let privacyItem: NSMenuItem
     let locationItem: NSMenuItem
 
-    private let settings: TelegramSettings
-    private let service: TelegramNotificationHandling
-    private let dialogs: TelegramDialogPresenting
+    private let settings: NotificationSettings
+    private let service: NotificationHandling
+    private let dialogs: NotificationDialogPresenting
     private let locationAuthorization: LocationAuthorizationRequesting
     private let hostName: () -> String
-    private let serviceQueue = DispatchQueue(label: "jp.sone.BLEUnlock.telegram.menu",
+    private let serviceQueue = DispatchQueue(label: "jp.sone.BLEUnlock.notification.menu",
                                              qos: .utility)
 
-    init(settings: TelegramSettings,
-         service: TelegramNotificationHandling,
-         dialogs: TelegramDialogPresenting,
+    init(settings: NotificationSettings,
+         service: NotificationHandling,
+         dialogs: NotificationDialogPresenting,
          locationAuthorization: LocationAuthorizationRequesting = CoreMacLocationProvider(),
          hostName: @escaping () -> String = { Host.current().localizedName ?? "Mac" }) {
         self.settings = settings
@@ -41,20 +41,20 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
         self.locationAuthorization = locationAuthorization
         self.hostName = hostName
 
-        enableItem = NSMenuItem(title: t("telegram_enable"),
+        enableItem = NSMenuItem(title: t("notification_enable"),
                                 action: #selector(toggleEnabled(_:)),
                                 keyEquivalent: "")
-        let configureItem = NSMenuItem(title: t("telegram_configure"),
+        let configureItem = NSMenuItem(title: t("notification_configure"),
                                        action: #selector(configure),
                                        keyEquivalent: "")
-        testItem = NSMenuItem(title: t("telegram_test"),
+        testItem = NSMenuItem(title: t("notification_test"),
                               action: #selector(sendTest),
                               keyEquivalent: "")
 
         let eventsMenu = NSMenu()
         eventsMenu.autoenablesItems = false
-        var items: [TelegramEvent: NSMenuItem] = [:]
-        for event in TelegramEvent.allCases {
+        var items: [NotificationEvent: NSMenuItem] = [:]
+        for event in NotificationEvent.allCases {
             let item = NSMenuItem(title: t("telegram_event_\(event.rawValue)"),
                                   action: #selector(toggleEvent(_:)),
                                   keyEquivalent: "")
@@ -63,21 +63,21 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
         }
         eventItems = items
 
-        let eventsItem = NSMenuItem(title: t("telegram_events"),
+        let eventsItem = NSMenuItem(title: t("notification_events"),
                                     action: nil,
                                     keyEquivalent: "")
         eventsItem.submenu = eventsMenu
-        photoItem = NSMenuItem(title: t("telegram_take_photo"),
+        photoItem = NSMenuItem(title: t("notification_take_photo"),
                                action: #selector(togglePhoto(_:)),
                                keyEquivalent: "")
         privacyItem = NSMenuItem(title: t("telegram_camera_privacy"),
                                  action: nil,
                                  keyEquivalent: "")
         privacyItem.isEnabled = false
-        locationItem = NSMenuItem(title: t("telegram_attach_mac_location"),
+        locationItem = NSMenuItem(title: t("notification_attach_mac_location"),
                                   action: #selector(toggleLocation(_:)),
                                   keyEquivalent: "")
-        statusItem = NSMenuItem(title: t("telegram_status_not_configured"),
+        statusItem = NSMenuItem(title: t("notification_status_not_configured"),
                                 action: nil,
                                 keyEquivalent: "")
         statusItem.isEnabled = false
@@ -118,11 +118,11 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
         locationItem.isEnabled = settings.takePhotoOnIntruded
 
         if !configured {
-            statusItem.title = t("telegram_status_not_configured")
+            statusItem.title = t("notification_status_not_configured")
         } else if settings.isEnabled {
-            statusItem.title = t("telegram_status_enabled")
+            statusItem.title = t("notification_status_enabled")
         } else {
-            statusItem.title = t("telegram_status_disabled")
+            statusItem.title = t("notification_status_disabled")
         }
     }
 
@@ -163,8 +163,8 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
         do {
             configured = try settings.isConfigured()
         } catch {
-            dialogs.showResult(title: t("telegram_configure"),
-                               message: t("telegram_error_settings_unavailable"))
+            dialogs.showResult(title: t("notification_configure"),
+                               message: t("notification_error_settings_unavailable"))
             return
         }
 
@@ -176,14 +176,14 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
                                                   chatID: input.chatID)
                 guard try self.settings.isConfigured() else {
                     self.dialogs.showResult(
-                        title: t("telegram_configure"),
-                        message: t("telegram_error_not_configured")
+                        title: t("notification_configure"),
+                        message: t("notification_error_not_configured")
                     )
                     return
                 }
                 self.menuWillOpen(self.menu)
             } catch {
-                self.dialogs.showResult(title: t("telegram_configure"),
+                self.dialogs.showResult(title: t("notification_configure"),
                                         message: error.localizedDescription)
             }
         }
@@ -204,9 +204,9 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
             guard let self = self else { return }
             switch result {
             case .success:
-                self.dialogs.showResult(title: t("telegram_test_success"), message: "")
+                self.dialogs.showResult(title: t("notification_test_success"), message: "")
             case .failure(let error):
-                self.dialogs.showResult(title: t("telegram_test_failed"),
+                self.dialogs.showResult(title: t("notification_test_failed"),
                                         message: error.localizedDescription)
             }
         }
@@ -221,15 +221,15 @@ final class TelegramMenuController: NSObject, NSMenuDelegate {
     }
 }
 
-final class AppKitTelegramDialogPresenter: TelegramDialogPresenting {
+final class AppKitNotificationDialogPresenter: NotificationDialogPresenting {
     func requestCredentials(hasStoredToken: Bool,
                             completion: (TelegramCredentialInput?) -> Void) {
         precondition(Thread.isMainThread)
 
         let alert = NSAlert()
         alert.window.title = "BLEUnlock"
-        alert.messageText = t("telegram_configure")
-        alert.addButton(withTitle: t("telegram_save"))
+        alert.messageText = t("notification_configure")
+        alert.addButton(withTitle: t("notification_save"))
         alert.addButton(withTitle: t("cancel"))
 
         let explanation = NSTextField(wrappingLabelWithString: t("telegram_setup_help"))

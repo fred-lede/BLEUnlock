@@ -1,15 +1,15 @@
 import AppKit
 import Foundation
 
-protocol TelegramNotificationHandling {
-    func handle(_ context: TelegramEventContext)
+protocol NotificationHandling {
+    func handle(_ context: NotificationEventContext)
     func sendTest(hostName: String,
                   completion: @escaping (Result<Void, Error>) -> Void)
 }
 
-protocol TelegramMessageFormatting {
-    func message(for context: TelegramEventContext) -> String
-    func photoCaption(for context: TelegramEventContext,
+protocol NotificationMessageFormatting {
+    func message(for context: NotificationEventContext) -> String
+    func photoCaption(for context: NotificationEventContext,
                       location: TelegramLocation?) -> String
 }
 
@@ -58,15 +58,15 @@ final class UserNotificationFailureDelivery: FailureNotificationDelivering {
         scheduler.perform { [notificationCenter, notificationFactory] in
             let notification = notificationFactory()
             notification.title = "BLEUnlock"
-            notification.subtitle = t("telegram_failure_notification_subtitle")
+            notification.subtitle = t("notification_failure_notification_subtitle")
             notification.informativeText = message
             notificationCenter.deliver(notification)
         }
     }
 }
 
-final class TelegramMessageFormatter: TelegramMessageFormatting {
-    func message(for context: TelegramEventContext) -> String {
+final class NotificationMessageFormatter: NotificationMessageFormatting {
+    func message(for context: NotificationEventContext) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.locale = .current
         dateFormatter.dateStyle = .medium
@@ -82,7 +82,7 @@ final class TelegramMessageFormatter: TelegramMessageFormatting {
         return lines.joined(separator: "\n")
     }
 
-    func photoCaption(for context: TelegramEventContext,
+    func photoCaption(for context: NotificationEventContext,
                       location: TelegramLocation?) -> String {
         var lines = [message(for: context)]
         guard let location = location else {
@@ -104,7 +104,7 @@ final class TelegramMessageFormatter: TelegramMessageFormatting {
         String(format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), value)
     }
 
-    private func localizedDescription(for event: TelegramEvent) -> String {
+    private func localizedDescription(for event: NotificationEvent) -> String {
         let key: String
         let fallback: String
         switch event {
@@ -176,30 +176,30 @@ final class RateLimitedFailureReporter: FailureReporting {
     }
 }
 
-private enum TelegramNotificationServiceError: LocalizedError {
+private enum NotificationServiceError: LocalizedError {
     case notConfigured
     case settingsUnavailable
 
     var errorDescription: String? {
         switch self {
         case .notConfigured:
-            return t("telegram_error_not_configured")
+            return t("notification_error_not_configured")
         case .settingsUnavailable:
-            return t("telegram_error_settings_unavailable")
+            return t("notification_error_settings_unavailable")
         }
     }
 }
 
-final class TelegramNotificationService: TelegramNotificationHandling {
-    private let settings: TelegramSettings
+final class NotificationService: NotificationHandling {
+    private let settings: NotificationSettings
     private let sender: TelegramSending
     private let camera: PhotoCapturing
     private let location: MacLocationProviding
     private let removeFile: (URL) throws -> Void
     private let reporter: FailureReporting
-    private let formatter: TelegramMessageFormatting
+    private let formatter: NotificationMessageFormatting
 
-    init(settings: TelegramSettings,
+    init(settings: NotificationSettings,
          sender: TelegramSending,
          camera: PhotoCapturing,
          location: MacLocationProviding = CoreMacLocationProvider(),
@@ -207,7 +207,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
              try FileManager.default.removeItem(at: $0)
          },
          reporter: FailureReporting,
-         formatter: TelegramMessageFormatting = TelegramMessageFormatter()) {
+         formatter: NotificationMessageFormatting = NotificationMessageFormatter()) {
         self.settings = settings
         self.sender = sender
         self.camera = camera
@@ -217,7 +217,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
         self.formatter = formatter
     }
 
-    func handle(_ context: TelegramEventContext) {
+    func handle(_ context: NotificationEventContext) {
         guard settings.isEnabled, settings.isEventEnabled(context.event) else {
             return
         }
@@ -228,7 +228,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
             credentials = storedCredentials
         } catch {
             reporter.report(category: "settings",
-                            message: t("telegram_error_settings_unavailable"))
+                            message: t("notification_error_settings_unavailable"))
             return
         }
 
@@ -254,16 +254,16 @@ final class TelegramNotificationService: TelegramNotificationHandling {
         let credentials: TelegramCredentials
         do {
             guard let storedCredentials = try settings.credentials() else {
-                completion(.failure(TelegramNotificationServiceError.notConfigured))
+                completion(.failure(NotificationServiceError.notConfigured))
                 return
             }
             credentials = storedCredentials
         } catch {
-            completion(.failure(TelegramNotificationServiceError.settingsUnavailable))
+            completion(.failure(NotificationServiceError.settingsUnavailable))
             return
         }
 
-        let context = TelegramEventContext(event: .intruded,
+        let context = NotificationEventContext(event: .intruded,
                                            hostName: hostName,
                                            timestamp: Date(),
                                            rssi: nil)
@@ -286,7 +286,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
 
     private func sendLocatedPhotoOrFallback(
         credentials: TelegramCredentials,
-        context: TelegramEventContext,
+        context: NotificationEventContext,
         completion: ((Result<Void, Error>) -> Void)?
     ) {
         let coordinator = PhotoLocationCoordinator(camera: camera, location: location)
@@ -302,7 +302,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
     private func deliver(
         _ outcome: PhotoLocationOutcome,
         credentials: TelegramCredentials,
-        context: TelegramEventContext,
+        context: NotificationEventContext,
         completion: ((Result<Void, Error>) -> Void)?
     ) {
         switch outcome {
@@ -325,7 +325,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
                     try removeFile(photoURL)
                 } catch {
                     reporter.report(category: "file",
-                                    message: t("telegram_error_file_cleanup"))
+                                    message: t("notification_error_file_cleanup"))
                 }
                 switch (result, position) {
                 case (.success, .some(let position)):
@@ -367,7 +367,7 @@ final class TelegramNotificationService: TelegramNotificationHandling {
                         try removeFile(photoURL)
                     } catch {
                         reporter.report(category: "file",
-                                        message: t("telegram_error_file_cleanup"))
+                                        message: t("notification_error_file_cleanup"))
                     }
                     if case .failure(let error) = result {
                         reporter.report(category: "telegram", message: error.localizedDescription)

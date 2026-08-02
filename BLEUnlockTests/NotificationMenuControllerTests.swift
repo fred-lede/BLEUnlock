@@ -2,29 +2,29 @@ import AppKit
 import XCTest
 @testable import BLEUnlock
 
-final class TelegramMenuControllerTests: XCTestCase {
+final class NotificationMenuControllerTests: XCTestCase {
     private var defaultsSuiteName: String!
     private var defaults: UserDefaults!
-    private var settings: TelegramSettings!
-    private var service: RecordingTelegramNotificationService!
-    private var dialogs: RecordingTelegramDialogPresenter!
+    private var settings: NotificationSettings!
+    private var service: RecordingNotificationService!
+    private var dialogs: RecordingNotificationDialogPresenter!
     private var locationAuthorization: RecordingLocationAuthorizationRequester!
-    private var controller: TelegramMenuController!
+    private var controller: NotificationMenuController!
 
     override func setUp() {
         super.setUp()
         defaultsSuiteName = "jp.sone.BLEUnlockTests.TelegramMenuController.\(UUID())"
         defaults = UserDefaults(suiteName: defaultsSuiteName)!
         defaults.removePersistentDomain(forName: defaultsSuiteName)
-        settings = TelegramSettings(defaults: defaults, secrets: MemorySecretStore())
-        service = RecordingTelegramNotificationService()
-        dialogs = RecordingTelegramDialogPresenter()
+        settings = NotificationSettings(defaults: defaults, secrets: MemorySecretStore())
+        service = RecordingNotificationService()
+        dialogs = RecordingNotificationDialogPresenter()
         locationAuthorization = RecordingLocationAuthorizationRequester()
-        controller = TelegramMenuController(settings: settings,
-                                            service: service,
-                                            dialogs: dialogs,
-                                            locationAuthorization: locationAuthorization,
-                                            hostName: { "Fred-Mac" })
+        controller = NotificationMenuController(settings: settings,
+                                                service: service,
+                                                dialogs: dialogs,
+                                                locationAuthorization: locationAuthorization,
+                                                hostName: { "Fred-Mac" })
     }
 
     override func tearDown() {
@@ -44,7 +44,7 @@ final class TelegramMenuControllerTests: XCTestCase {
 
         XCTAssertFalse(controller.enableItem.isEnabled)
         XCTAssertFalse(controller.testItem.isEnabled)
-        XCTAssertEqual(controller.statusItem.title, t("telegram_status_not_configured"))
+        XCTAssertEqual(controller.statusItem.title, t("notification_status_not_configured"))
     }
 
     func testConfiguredMenuCanEnableTelegram() throws {
@@ -108,7 +108,7 @@ final class TelegramMenuControllerTests: XCTestCase {
         wait(for: [presented], timeout: 2)
         XCTAssertEqual(service.hostNames, ["Fred-Mac"])
         XCTAssertEqual(dialogs.results.count, 1)
-        XCTAssertEqual(dialogs.results.first?.title, t("telegram_test_success"))
+        XCTAssertEqual(dialogs.results.first?.title, t("notification_test_success"))
         XCTAssertTrue(dialogs.showResultWasOnMainThread)
     }
 
@@ -158,7 +158,7 @@ final class TelegramMenuControllerTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let source = try String(contentsOf: repository.appendingPathComponent(
-            "BLEUnlock/TelegramMenuController.swift"
+            "BLEUnlock/NotificationMenuController.swift"
         ))
 
         XCTAssertFalse(source.contains("settings.credentials()"))
@@ -175,7 +175,7 @@ private final class RecordingLocationAuthorizationRequester: LocationAuthorizati
     }
 }
 
-private final class RecordingTelegramNotificationService: TelegramNotificationHandling {
+private final class RecordingNotificationService: NotificationHandling {
     private let lock = NSLock()
     private var recordedHostNames: [String] = []
     var result: Result<Void, Error> = .success(())
@@ -186,7 +186,7 @@ private final class RecordingTelegramNotificationService: TelegramNotificationHa
         return recordedHostNames
     }
 
-    func handle(_ context: TelegramEventContext) {}
+    func handle(_ context: NotificationEventContext) {}
 
     func sendTest(hostName: String,
                   completion: @escaping (Result<Void, Error>) -> Void) {
@@ -197,7 +197,7 @@ private final class RecordingTelegramNotificationService: TelegramNotificationHa
     }
 }
 
-private final class RecordingTelegramDialogPresenter: TelegramDialogPresenting {
+private final class RecordingNotificationDialogPresenter: NotificationDialogPresenting {
     struct PresentedResult {
         let title: String
         let message: String

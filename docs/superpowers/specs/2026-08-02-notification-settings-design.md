@@ -79,9 +79,8 @@ A new `NotificationSettings` class replaces `TelegramSettings` in the app wiring
 UserDefaults keys:
 
 - `notification.channel` — selected channel (default `.telegram`).
-- `notification.enabled.telegram` / `notification.enabled.synologyChat` — per-channel enabled.
-- `notification.takePhoto.telegram` / `notification.takePhoto.synologyChat` — per-channel photo preference (default true).
-- `notification.attachLocation.telegram` / `notification.attachLocation.synologyChat` — per-channel location preference (default false).
+- Telegram reuses its existing keys so existing users keep their preferences with no migration: `telegram.enabled`, `telegram.takePhotoOnIntruded`, `telegram.attachMacLocation`.
+- `notification.enabled.synologyChat` / `notification.takePhoto.synologyChat` (default true) / `notification.attachLocation.synologyChat` (default false) — Synology-only per-channel preferences.
 - `telegram.event.<rawValue>` — shared event switches, unchanged from today (defaults: all on except `unlocked`).
 
 Keychain accounts (via existing `SecretStoring`):

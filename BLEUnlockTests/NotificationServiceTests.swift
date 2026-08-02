@@ -3,16 +3,16 @@ import Foundation
 import XCTest
 @testable import BLEUnlock
 
-final class TelegramNotificationServiceTests: XCTestCase {
+final class NotificationServiceTests: XCTestCase {
     private var defaultsSuiteName: String!
     private var defaults: UserDefaults!
-    private var settings: TelegramSettings!
+    private var settings: NotificationSettings!
     private var sender: RecordingTelegramSender!
     private var camera: StubPhotoCapturer!
     private var location: StubMacLocationProvider!
     private var reporter: RecordingFailureReporter!
     private var remover: RecordingFileRemover!
-    private var service: TelegramNotificationService!
+    private var service: NotificationService!
     private let photoURL = URL(fileURLWithPath: "/private/tmp/BLEUnlock-test-photo.jpg")
 
     override func setUp() {
@@ -20,13 +20,13 @@ final class TelegramNotificationServiceTests: XCTestCase {
         defaultsSuiteName = "jp.sone.BLEUnlockTests.TelegramNotificationService.\(UUID())"
         defaults = UserDefaults(suiteName: defaultsSuiteName)
         defaults.removePersistentDomain(forName: defaultsSuiteName)
-        settings = TelegramSettings(defaults: defaults, secrets: MemorySecretStore())
+        settings = NotificationSettings(defaults: defaults, secrets: MemorySecretStore())
         sender = RecordingTelegramSender()
         camera = StubPhotoCapturer()
         location = StubMacLocationProvider()
         reporter = RecordingFailureReporter()
         remover = RecordingFileRemover()
-        service = TelegramNotificationService(
+        service = NotificationService(
             settings: settings,
             sender: sender,
             camera: camera,
@@ -71,10 +71,10 @@ final class TelegramNotificationServiceTests: XCTestCase {
         let failure = NSError(domain: secret,
                               code: 17,
                               userInfo: [NSLocalizedDescriptionKey: "Could not read \(secret)"])
-        settings = TelegramSettings(defaults: defaults,
-                                    secrets: ThrowingSecretStore(error: failure))
+        settings = NotificationSettings(defaults: defaults,
+                                        secrets: ThrowingSecretStore(error: failure))
         settings.isEnabled = true
-        service = TelegramNotificationService(
+        service = NotificationService(
             settings: settings,
             sender: sender,
             camera: camera,
@@ -87,7 +87,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
 
         assertNoCameraOrNetworkCalls()
         XCTAssertEqual(reporter.categories, ["settings"])
-        XCTAssertEqual(reporter.messages, [t("telegram_error_settings_unavailable")])
+        XCTAssertEqual(reporter.messages, [t("notification_error_settings_unavailable")])
         XCTAssertFalse(reporter.messages.joined().contains(secret))
     }
 
@@ -291,8 +291,8 @@ final class TelegramNotificationServiceTests: XCTestCase {
                                          longitude: 121.5654,
                                          horizontalAccuracy: 18,
                                          timestamp: Date()))
-        let formatter = RecordingTelegramMessageFormatter()
-        service = TelegramNotificationService(
+        let formatter = RecordingNotificationMessageFormatter()
+        service = NotificationService(
             settings: settings,
             sender: sender,
             camera: camera,
@@ -371,7 +371,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
         XCTAssertTrue(factoryWasOnMainThread)
         XCTAssertTrue(center.deliveryWasOnMainThread)
         XCTAssertEqual(center.notifications.first?.subtitle,
-                       t("telegram_failure_notification_subtitle"))
+                       t("notification_failure_notification_subtitle"))
         XCTAssertEqual(center.notifications.first?.informativeText, "Offline")
     }
 
@@ -411,11 +411,11 @@ final class TelegramNotificationServiceTests: XCTestCase {
     }
 
     func testPhotoCaptionIncludesCoordinatesAccuracyAndEscapedAppleMapsLink() {
-        let formatter = TelegramMessageFormatter()
-        let context = TelegramEventContext(event: .intruded,
-                                           hostName: "Fred-Mac",
-                                           timestamp: Date(timeIntervalSince1970: 1_000),
-                                           rssi: nil)
+        let formatter = NotificationMessageFormatter()
+        let context = NotificationEventContext(event: .intruded,
+                                               hostName: "Fred-Mac",
+                                               timestamp: Date(timeIntervalSince1970: 1_000),
+                                               rssi: nil)
         let location = TelegramLocation(latitude: 25.033,
                                         longitude: 121.5654,
                                         horizontalAccuracy: 18.4,
@@ -429,11 +429,11 @@ final class TelegramNotificationServiceTests: XCTestCase {
     }
 
     func testPhotoCaptionMarksLocationUnavailableWithoutCoordinates() {
-        let formatter = TelegramMessageFormatter()
-        let context = TelegramEventContext(event: .intruded,
-                                           hostName: "Fred-Mac",
-                                           timestamp: Date(timeIntervalSince1970: 1_000),
-                                           rssi: nil)
+        let formatter = NotificationMessageFormatter()
+        let context = NotificationEventContext(event: .intruded,
+                                               hostName: "Fred-Mac",
+                                               timestamp: Date(timeIntervalSince1970: 1_000),
+                                               rssi: nil)
 
         let caption = formatter.photoCaption(for: context, location: nil)
 
@@ -446,7 +446,7 @@ final class TelegramNotificationServiceTests: XCTestCase {
         settings.isEnabled = true
     }
 
-    private func context(event: TelegramEvent, rssi: Int? = nil) -> TelegramEventContext {
+    private func context(event: NotificationEvent, rssi: Int? = nil) -> NotificationEventContext {
         .init(event: event,
               hostName: "Fred-Mac",
               timestamp: Date(timeIntervalSince1970: 100),
@@ -473,16 +473,16 @@ final class TelegramNotificationServiceTests: XCTestCase {
     }
 }
 
-private final class RecordingTelegramMessageFormatter: TelegramMessageFormatting {
-    private(set) var messageContexts: [TelegramEventContext] = []
-    private(set) var photoCaptionContexts: [TelegramEventContext] = []
+private final class RecordingNotificationMessageFormatter: NotificationMessageFormatting {
+    private(set) var messageContexts: [NotificationEventContext] = []
+    private(set) var photoCaptionContexts: [NotificationEventContext] = []
 
-    func message(for context: TelegramEventContext) -> String {
+    func message(for context: NotificationEventContext) -> String {
         messageContexts.append(context)
         return "message"
     }
 
-    func photoCaption(for context: TelegramEventContext,
+    func photoCaption(for context: NotificationEventContext,
                       location: TelegramLocation?) -> String {
         photoCaptionContexts.append(context)
         return "caption"

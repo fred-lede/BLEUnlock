@@ -4,14 +4,10 @@ import XCTest
 
 final class LocalizationTests: XCTestCase {
     private let telegramKeys: Set<String> = [
-        "telegram", "telegram_enable", "telegram_configure", "telegram_test",
-        "telegram_events", "telegram_event_away", "telegram_event_lost",
+        "telegram_event_away", "telegram_event_lost",
         "telegram_event_unlocked", "telegram_event_intruded",
-        "telegram_take_photo", "telegram_attach_mac_location", "telegram_status_not_configured",
-        "telegram_status_enabled", "telegram_status_disabled",
-        "telegram_bot_token", "telegram_chat_id", "telegram_save",
-        "telegram_setup_help", "telegram_test_success", "telegram_test_failed",
-        "telegram_camera_privacy", "telegram_error_not_configured",
+        "telegram_bot_token", "telegram_chat_id", "telegram_setup_help",
+        "telegram_camera_privacy",
         "telegram_camera_error_denied", "telegram_camera_error_restricted",
         "telegram_camera_error_no_camera", "telegram_camera_error_setup_failed",
         "telegram_camera_error_capture_failed", "telegram_camera_error_timeout",
@@ -19,13 +15,38 @@ final class LocalizationTests: XCTestCase {
         "telegram_error_invalid_request", "telegram_error_unreadable_photo",
         "telegram_error_transport", "telegram_error_http_status",
         "telegram_error_rejected", "telegram_error_invalid_response",
-        "telegram_error_settings_unavailable", "telegram_error_file_cleanup",
-        "telegram_error_keychain_status", "telegram_failure_notification_subtitle",
+        "telegram_error_keychain_status",
         "telegram_message_time", "telegram_message_rssi",
         "telegram_message_coordinates", "telegram_message_accuracy",
         "telegram_message_map", "telegram_location_unavailable",
         "telegram_location_error", "telegram_location_send_error"
     ]
+
+    private let notificationKeys: Set<String> = [
+        "notifications", "notification_channel",
+        "notification_channel_telegram", "notification_channel_synology_chat",
+        "notification_enable", "notification_configure", "notification_test",
+        "notification_events", "notification_take_photo",
+        "notification_attach_mac_location", "notification_status_not_configured",
+        "notification_status_enabled", "notification_status_disabled",
+        "notification_save", "notification_test_success", "notification_test_failed",
+        "notification_error_not_configured", "notification_error_settings_unavailable",
+        "notification_error_file_cleanup", "notification_failure_notification_subtitle",
+        "notification_camera_privacy_synology"
+    ]
+
+    private let synologyKeys: Set<String> = [
+        "synology_webhook_url", "synology_username", "synology_password",
+        "synology_channel_id", "synology_setup_help",
+        "synology_error_invalid_request", "synology_error_transport",
+        "synology_error_http_status", "synology_error_invalid_response",
+        "synology_error_login", "synology_error_upload", "synology_error_post",
+        "synology_error_settings_unavailable"
+    ]
+
+    private var allKeys: Set<String> {
+        telegramKeys.union(notificationKeys).union(synologyKeys)
+    }
 
     private let localizationDirectories = [
         "Base", "da", "de", "ja", "nb", "sv", "tr", "zh-Hans", "zh-Hant"
@@ -42,12 +63,12 @@ final class LocalizationTests: XCTestCase {
             .deletingLastPathComponent()
     }
 
-    func testEveryLocalizationContainsAllTelegramKeys() throws {
+    func testEveryLocalizationContainsAllKeys() throws {
         for name in localizationDirectories {
             let url = repository.appendingPathComponent("BLEUnlock/\(name).lproj/Localizable.strings")
             let values = try strings(at: url)
-            XCTAssertTrue(telegramKeys.subtracting(values.keys).isEmpty, "Missing keys in \(name)")
-            for key in telegramKeys {
+            XCTAssertTrue(allKeys.subtracting(values.keys).isEmpty, "Missing keys in \(name)")
+            for key in allKeys {
                 let value = try XCTUnwrap(values[key], "Missing \(key) in \(name)")
                 XCTAssertFalse(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                                "Empty \(key) in \(name)")
@@ -79,6 +100,18 @@ final class LocalizationTests: XCTestCase {
         for phrase in ["system default camera", "upload", "telegram", "deleted", "text"] {
             XCTAssertTrue(privacy.contains(phrase),
                           "Camera privacy text must mention \(phrase)")
+        }
+    }
+
+    func testSynologyCameraPrivacyTextStatesTheCompleteDataFlow() throws {
+        let values = try strings(at: repository.appendingPathComponent(
+            "BLEUnlock/Base.lproj/Localizable.strings"
+        ))
+        let privacy = try XCTUnwrap(values["notification_camera_privacy_synology"]).lowercased()
+
+        for phrase in ["system default camera", "upload", "synology chat", "deleted", "text"] {
+            XCTAssertTrue(privacy.contains(phrase),
+                          "Synology camera privacy text must mention \(phrase)")
         }
     }
 
@@ -164,20 +197,20 @@ final class LocalizationTests: XCTestCase {
         }
     }
 
-    func testProductionTelegramLocalizationReferencesAreCovered() throws {
-        let generatedEventKeys = Set(TelegramEvent.allCases.map {
+    func testProductionNotificationLocalizationReferencesAreCovered() throws {
+        let generatedEventKeys = Set(NotificationEvent.allCases.map {
             "telegram_event_\($0.rawValue)"
         })
         XCTAssertEqual(generatedEventKeys, concreteTelegramEventKeys,
-                       "Every finite TelegramEvent value must have an explicit localization key")
+                       "Every finite NotificationEvent value must have an explicit localization key")
         XCTAssertTrue(generatedEventKeys.isSubset(of: telegramKeys))
 
         let sourceFiles = [
-            "CameraCapture.swift", "KeychainStore.swift", "TelegramMenuController.swift",
-            "TelegramNotificationService.swift", "TelegramNotifier.swift"
+            "CameraCapture.swift", "KeychainStore.swift", "NotificationMenuController.swift",
+            "NotificationService.swift", "TelegramNotifier.swift"
         ]
         let expression = try NSRegularExpression(
-            pattern: #"(?:t|NSLocalizedString)\(\"(telegram_[^\"]+)\""#
+            pattern: #"(?:t|NSLocalizedString)\("((?:telegram|notification|synology)_[^\"]+)"#
         )
         var referencedKeys: Set<String> = []
 
@@ -197,13 +230,13 @@ final class LocalizationTests: XCTestCase {
             }
         }
 
-        XCTAssertTrue(referencedKeys.isSubset(of: telegramKeys),
-                      "Production keys missing from completeness set: \(referencedKeys.subtracting(telegramKeys))")
+        XCTAssertTrue(referencedKeys.isSubset(of: allKeys),
+                      "Production keys missing from completeness set: \(referencedKeys.subtracting(allKeys))")
     }
 
-    func testTelegramSourcesDoNotContainHardCodedEnglishErrorsOrLabels() throws {
+    func testNotificationSourcesDoNotContainHardCodedEnglishErrorsOrLabels() throws {
         let files = ["CameraCapture.swift", "KeychainStore.swift",
-                     "TelegramNotificationService.swift", "TelegramNotifier.swift"]
+                     "NotificationService.swift", "TelegramNotifier.swift"]
         let source = try files.map {
             try String(contentsOf: repository.appendingPathComponent("BLEUnlock/\($0)"))
         }.joined(separator: "\n")
@@ -216,7 +249,15 @@ final class LocalizationTests: XCTestCase {
             "The captured photo could not be read.", "Telegram could not be reached.",
             "Telegram returned HTTP status", "Telegram returned an invalid response.",
             "Telegram notification failed", "Telegram settings could not be read.",
-            "The captured photo could not be deleted.", "Keychain operation failed"
+            "The captured photo could not be deleted.", "Keychain operation failed",
+            "The Synology Chat request could not be created.",
+            "The Synology Chat server could not be reached.",
+            "The Synology Chat server returned HTTP status",
+            "The Synology Chat server returned an invalid response.",
+            "Synology Chat login failed.", "The photo could not be uploaded to Synology Chat.",
+            "The message could not be posted to Synology Chat.",
+            "Synology Chat settings could not be read.",
+            "Notification settings could not be read.", "Notification failed"
         ]
 
         for text in forbidden {

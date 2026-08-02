@@ -32,11 +32,11 @@
 		3DD4B664226C1CF000451B7B /* lowlevel.c in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4B663226C1CF000451B7B /* lowlevel.c */; };
 		3DD4B666226C1DF200451B7B /* BLE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4B665226C1DF200451B7B /* BLE.swift */; };
 		3DD4B669226C1E3700451B7B /* login.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3DD4B668226C1E3700451B7B /* login.framework */; };
-		7E1000013000000000000001 /* TelegramSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000113000000000000001 /* TelegramSettingsTests.swift */; };
+		7E1000013000000000000001 /* NotificationSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000113000000000000001 /* NotificationSettingsTests.swift */; };
 		7E1000023000000000000001 /* TestDoubles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000123000000000000001 /* TestDoubles.swift */; };
 		7E1000033000000000000001 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E1000133000000000000001 /* XCTest.framework */; };
-		7E1000063000000000000001 /* TelegramEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000213000000000000001 /* TelegramEvent.swift */; };
-		7E1000073000000000000001 /* TelegramSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000223000000000000001 /* TelegramSettings.swift */; };
+		7E1000063000000000000001 /* NotificationEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000213000000000000001 /* NotificationEvent.swift */; };
+		7E1000073000000000000001 /* NotificationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000223000000000000001 /* NotificationSettings.swift */; };
 		7E1000083000000000000001 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000243000000000000001 /* KeychainStore.swift */; };
 		7E1000093000000000000001 /* KeychainStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000233000000000000001 /* KeychainStoreTests.swift */; };
 		7E10000A3000000000000001 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E1000253000000000000001 /* Security.framework */; };
@@ -45,10 +45,10 @@
 		7E10000D3000000000000001 /* CameraCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000283000000000000001 /* CameraCaptureTests.swift */; };
 		7E10000E3000000000000001 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000293000000000000001 /* CameraCapture.swift */; };
 		7E10000F3000000000000001 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E10002A3000000000000001 /* AVFoundation.framework */; };
-		7E10002B3000000000000001 /* TelegramNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002C3000000000000001 /* TelegramNotificationService.swift */; };
-		7E10002D3000000000000001 /* TelegramNotificationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002E3000000000000001 /* TelegramNotificationServiceTests.swift */; };
-		7E1000303000000000000001 /* TelegramMenuControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002F3000000000000001 /* TelegramMenuControllerTests.swift */; };
-		7E1000323000000000000001 /* TelegramMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000313000000000000001 /* TelegramMenuController.swift */; };
+		7E10002B3000000000000001 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002C3000000000000001 /* NotificationService.swift */; };
+		7E10002D3000000000000001 /* NotificationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002E3000000000000001 /* NotificationServiceTests.swift */; };
+		7E1000303000000000000001 /* NotificationMenuControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E10002F3000000000000001 /* NotificationMenuControllerTests.swift */; };
+		7E1000323000000000000001 /* NotificationMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000313000000000000001 /* NotificationMenuController.swift */; };
 		7E1000333000000000000001 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000343000000000000001 /* LocalizationTests.swift */; };
 		7E1000353000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7E1000363000000000000001 /* InfoPlist.strings */; };
 		7E1000433000000000000001 /* BLEScanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000423000000000000001 /* BLEScanTests.swift */; };
@@ -122,11 +122,11 @@
 		3DD4B665226C1DF200451B7B /* BLE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLE.swift; sourceTree = "<group>"; };
 		3DD4B668226C1E3700451B7B /* login.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = login.framework; path = ../../../../System/Library/PrivateFrameworks/login.framework; sourceTree = "<group>"; };
 		7E1000103000000000000001 /* BLEUnlockTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BLEUnlockTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		7E1000113000000000000001 /* TelegramSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramSettingsTests.swift; sourceTree = "<group>"; };
+		7E1000113000000000000001 /* NotificationSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsTests.swift; sourceTree = "<group>"; };
 		7E1000123000000000000001 /* TestDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDoubles.swift; sourceTree = "<group>"; };
 		7E1000133000000000000001 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
-		7E1000213000000000000001 /* TelegramEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramEvent.swift; sourceTree = "<group>"; };
-		7E1000223000000000000001 /* TelegramSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramSettings.swift; sourceTree = "<group>"; };
+		7E1000213000000000000001 /* NotificationEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationEvent.swift; sourceTree = "<group>"; };
+		7E1000223000000000000001 /* NotificationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettings.swift; sourceTree = "<group>"; };
 		7E1000233000000000000001 /* KeychainStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
 		7E1000243000000000000001 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		7E1000253000000000000001 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
@@ -135,10 +135,10 @@
 		7E1000283000000000000001 /* CameraCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureTests.swift; sourceTree = "<group>"; };
 		7E1000293000000000000001 /* CameraCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCapture.swift; sourceTree = "<group>"; };
 		7E10002A3000000000000001 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
-		7E10002C3000000000000001 /* TelegramNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotificationService.swift; sourceTree = "<group>"; };
-		7E10002E3000000000000001 /* TelegramNotificationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotificationServiceTests.swift; sourceTree = "<group>"; };
-		7E10002F3000000000000001 /* TelegramMenuControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramMenuControllerTests.swift; sourceTree = "<group>"; };
-		7E1000313000000000000001 /* TelegramMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramMenuController.swift; sourceTree = "<group>"; };
+		7E10002C3000000000000001 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		7E10002E3000000000000001 /* NotificationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationServiceTests.swift; sourceTree = "<group>"; };
+		7E10002F3000000000000001 /* NotificationMenuControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationMenuControllerTests.swift; sourceTree = "<group>"; };
+		7E1000313000000000000001 /* NotificationMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationMenuController.swift; sourceTree = "<group>"; };
 		7E1000343000000000000001 /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
 		7E1000373000000000000001 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Base; path = Base.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		7E1000383000000000000001 /* da */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = da; path = da.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -231,12 +231,12 @@
 				7E1000513000000000000001 /* ProximityMonitor.swift */,
 				7E10004A3000000000000001 /* PhotoLocationCoordinator.swift */,
 				7E1000453000000000000001 /* MacLocationProvider.swift */,
-				7E1000313000000000000001 /* TelegramMenuController.swift */,
-				7E10002C3000000000000001 /* TelegramNotificationService.swift */,
+				7E1000313000000000000001 /* NotificationMenuController.swift */,
+				7E10002C3000000000000001 /* NotificationService.swift */,
 				7E1000293000000000000001 /* CameraCapture.swift */,
 				7E1000263000000000000001 /* TelegramNotifier.swift */,
-				7E1000213000000000000001 /* TelegramEvent.swift */,
-				7E1000223000000000000001 /* TelegramSettings.swift */,
+				7E1000213000000000000001 /* NotificationEvent.swift */,
+				7E1000223000000000000001 /* NotificationSettings.swift */,
 				7E1000243000000000000001 /* KeychainStore.swift */,
 				3D95379322784D550017D8B9 /* AboutBox.swift */,
 				3D953799227853E20017D8B9 /* AboutBox.xib */,
@@ -278,12 +278,12 @@
 				7E1000473000000000000001 /* MacLocationProviderTests.swift */,
 				7E1000423000000000000001 /* BLEScanTests.swift */,
 				7E1000343000000000000001 /* LocalizationTests.swift */,
-				7E10002F3000000000000001 /* TelegramMenuControllerTests.swift */,
-				7E10002E3000000000000001 /* TelegramNotificationServiceTests.swift */,
+				7E10002F3000000000000001 /* NotificationMenuControllerTests.swift */,
+				7E10002E3000000000000001 /* NotificationServiceTests.swift */,
 				7E1000283000000000000001 /* CameraCaptureTests.swift */,
 				7E1000233000000000000001 /* KeychainStoreTests.swift */,
 				7E1000273000000000000001 /* TelegramNotifierTests.swift */,
-				7E1000113000000000000001 /* TelegramSettingsTests.swift */,
+				7E1000113000000000000001 /* NotificationSettingsTests.swift */,
 				7E1000123000000000000001 /* TestDoubles.swift */,
 			);
 			path = BLEUnlockTests;
@@ -461,12 +461,12 @@
 				7E1000503000000000000001 /* ProximityMonitor.swift in Sources */,
 				7E1000483000000000000001 /* PhotoLocationCoordinator.swift in Sources */,
 				7E1000443000000000000001 /* MacLocationProvider.swift in Sources */,
-				7E1000323000000000000001 /* TelegramMenuController.swift in Sources */,
-				7E10002B3000000000000001 /* TelegramNotificationService.swift in Sources */,
+				7E1000323000000000000001 /* NotificationMenuController.swift in Sources */,
+				7E10002B3000000000000001 /* NotificationService.swift in Sources */,
 				7E10000E3000000000000001 /* CameraCapture.swift in Sources */,
 				7E10000B3000000000000001 /* TelegramNotifier.swift in Sources */,
-				7E1000063000000000000001 /* TelegramEvent.swift in Sources */,
-				7E1000073000000000000001 /* TelegramSettings.swift in Sources */,
+				7E1000063000000000000001 /* NotificationEvent.swift in Sources */,
+				7E1000073000000000000001 /* NotificationSettings.swift in Sources */,
 				7E1000083000000000000001 /* KeychainStore.swift in Sources */,
 				3DD4B654226C1C3200451B7B /* AppDelegate.swift in Sources */,
 				3DD4B666226C1DF200451B7B /* BLE.swift in Sources */,
@@ -488,12 +488,12 @@
 				7E1000463000000000000001 /* MacLocationProviderTests.swift in Sources */,
 				7E1000433000000000000001 /* BLEScanTests.swift in Sources */,
 				7E1000333000000000000001 /* LocalizationTests.swift in Sources */,
-				7E1000303000000000000001 /* TelegramMenuControllerTests.swift in Sources */,
-				7E10002D3000000000000001 /* TelegramNotificationServiceTests.swift in Sources */,
+				7E1000303000000000000001 /* NotificationMenuControllerTests.swift in Sources */,
+				7E10002D3000000000000001 /* NotificationServiceTests.swift in Sources */,
 				7E10000D3000000000000001 /* CameraCaptureTests.swift in Sources */,
 				7E1000093000000000000001 /* KeychainStoreTests.swift in Sources */,
 				7E10000C3000000000000001 /* TelegramNotifierTests.swift in Sources */,
-				7E1000013000000000000001 /* TelegramSettingsTests.swift in Sources */,
+				7E1000013000000000000001 /* NotificationSettingsTests.swift in Sources */,
 				7E1000023000000000000001 /* TestDoubles.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

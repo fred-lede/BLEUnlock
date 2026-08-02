@@ -1,7 +1,7 @@
 import XCTest
 @testable import BLEUnlock
 
-final class TelegramSettingsTests: XCTestCase {
+final class NotificationSettingsTests: XCTestCase {
     private var defaultsSuiteName: String!
     private var defaults: UserDefaults!
     private var secrets: MemorySecretStore!
@@ -23,7 +23,7 @@ final class TelegramSettingsTests: XCTestCase {
     }
 
     func testDefaultsAreDisabledWithApprovedEventChoices() throws {
-        let settings = TelegramSettings(defaults: defaults, secrets: secrets)
+        let settings = NotificationSettings(defaults: defaults, secrets: secrets)
 
         XCTAssertFalse(settings.isEnabled)
         XCTAssertTrue(settings.isEventEnabled(.away))
@@ -35,13 +35,13 @@ final class TelegramSettingsTests: XCTestCase {
     }
 
     func testPersistsSwitchesAndCredentials() throws {
-        let settings = TelegramSettings(defaults: defaults, secrets: secrets)
+        let settings = NotificationSettings(defaults: defaults, secrets: secrets)
         settings.isEnabled = true
         settings.setEvent(.away, enabled: false)
         settings.takePhotoOnIntruded = false
         try settings.saveCredentials(replacementToken: "token-123", chatID: "987654")
 
-        let reloaded = TelegramSettings(defaults: defaults, secrets: secrets)
+        let reloaded = NotificationSettings(defaults: defaults, secrets: secrets)
         XCTAssertTrue(reloaded.isEnabled)
         XCTAssertFalse(reloaded.isEventEnabled(.away))
         XCTAssertFalse(reloaded.takePhotoOnIntruded)
@@ -50,7 +50,7 @@ final class TelegramSettingsTests: XCTestCase {
     }
 
     func testAttachMacLocationDefaultsOffAndPersists() {
-        let settings = TelegramSettings(defaults: defaults, secrets: secrets)
+        let settings = NotificationSettings(defaults: defaults, secrets: secrets)
 
         XCTAssertFalse(settings.attachMacLocation)
         settings.attachMacLocation = true
@@ -58,7 +58,7 @@ final class TelegramSettingsTests: XCTestCase {
     }
 
     func testBlankOrNilReplacementPreservesStoredToken() throws {
-        let settings = TelegramSettings(defaults: defaults, secrets: secrets)
+        let settings = NotificationSettings(defaults: defaults, secrets: secrets)
         try settings.saveCredentials(replacementToken: "original", chatID: "old-chat")
 
         try settings.saveCredentials(replacementToken: "  \n", chatID: "new-chat")

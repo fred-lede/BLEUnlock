@@ -30,25 +30,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     var unlockedAt = 0.0
     var inScreensaver = false
     var lastRSSI: Int? = nil
-    let telegramSettings = TelegramSettings(
+    let notificationSettings = NotificationSettings(
         secrets: KeychainStore(service: "jp.sone.BLEUnlock.telegram")
     )
     let macLocationProvider = CoreMacLocationProvider()
-    lazy var telegramService: TelegramNotificationHandling = TelegramNotificationService(
-        settings: telegramSettings,
+    lazy var notificationService: NotificationHandling = NotificationService(
+        settings: notificationSettings,
         sender: TelegramNotifier(transport: URLSessionTransport()),
         camera: CameraCapture(),
         location: macLocationProvider,
         reporter: RateLimitedFailureReporter()
     )
-    lazy var telegramMenuController = TelegramMenuController(
-        settings: telegramSettings,
-        service: telegramService,
-        dialogs: AppKitTelegramDialogPresenter(),
+    lazy var notificationMenuController = NotificationMenuController(
+        settings: notificationSettings,
+        service: notificationService,
+        dialogs: AppKitNotificationDialogPresenter(),
         locationAuthorization: macLocationProvider
     )
-    private let telegramEventQueue = DispatchQueue(
-        label: "jp.sone.BLEUnlock.telegram.events",
+    private let notificationEventQueue = DispatchQueue(
+        label: "jp.sone.BLEUnlock.notification.events",
         qos: .utility
     )
 
@@ -200,15 +200,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
 
     func dispatchEvent(_ rawValue: String) {
         runScript(rawValue)
-        guard let event = TelegramEvent(rawValue: rawValue) else { return }
-        let context = TelegramEventContext(
+        guard let event = NotificationEvent(rawValue: rawValue) else { return }
+        let context = NotificationEventContext(
             event: event,
             hostName: Host.current().localizedName ?? "Mac",
             timestamp: Date(),
             rssi: lastRSSI
         )
-        telegramEventQueue.async { [weak self] in
-            self?.telegramService.handle(context)
+        notificationEventQueue.async { [weak self] in
+            self?.notificationService.handle(context)
         }
     }
 
@@ -678,8 +678,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
             item.state = .on
         }
 
-        item = mainMenu.addItem(withTitle: t("telegram"), action: nil, keyEquivalent: "")
-        item.submenu = telegramMenuController.menu
+        item = mainMenu.addItem(withTitle: t("notifications"), action: nil, keyEquivalent: "")
+        item.submenu = notificationMenuController.menu
         
         mainMenu.addItem(withTitle: t("set_password"), action: #selector(askPassword), keyEquivalent: "")
 

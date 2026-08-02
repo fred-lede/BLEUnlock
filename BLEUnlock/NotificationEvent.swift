@@ -1,14 +1,14 @@
 import Foundation
 
-enum TelegramEvent: String, CaseIterable {
+enum NotificationEvent: String, CaseIterable {
     case away, lost, unlocked, intruded
 
     var defaultEnabled: Bool { self != .unlocked }
     var defaultsKey: String { "telegram.event.\(rawValue)" }
 }
 
-struct TelegramEventContext: Equatable {
-    let event: TelegramEvent
+struct NotificationEventContext: Equatable {
+    let event: NotificationEvent
     let hostName: String
     let timestamp: Date
     let rssi: Int?

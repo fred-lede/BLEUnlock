@@ -6,7 +6,7 @@ protocol SecretStoring {
     func removeValue(for account: String) throws
 }
 
-final class TelegramSettings {
+final class NotificationSettings {
     private enum Key {
         static let enabled = "telegram.enabled"
         static let takePhoto = "telegram.takePhotoOnIntruded"
@@ -38,11 +38,11 @@ final class TelegramSettings {
         set { defaults.set(newValue, forKey: Key.attachMacLocation) }
     }
 
-    func isEventEnabled(_ event: TelegramEvent) -> Bool {
+    func isEventEnabled(_ event: NotificationEvent) -> Bool {
         defaults.object(forKey: event.defaultsKey) as? Bool ?? event.defaultEnabled
     }
 
-    func setEvent(_ event: TelegramEvent, enabled: Bool) {
+    func setEvent(_ event: NotificationEvent, enabled: Bool) {
         defaults.set(enabled, forKey: event.defaultsKey)
     }
 
