@@ -61,19 +61,23 @@ Select your device, and you're done!
 
 For supported Apple devices, BLEUnlock combines the user-assigned device name with the detected hardware model when both are available, for example `Fred's iPhone (iPhone 16 Pro Max)`. If only a generic name such as `iPhone` or `iPad` is available, BLEUnlock displays the detected model instead.
 
-## Telegram notifications
+## Notification Settings
 
-Telegram notifications are optional and disabled until you configure and enable them:
+Notifications are optional and disabled until you configure and enable them. BLEUnlock sends them through one channel at a time; choose the channel in the *Notification Channel* submenu (a radio selection, defaulting to Telegram).
+
+For **Telegram**, keep the existing setup:
 
 1. Create a bot with [@BotFather](https://t.me/BotFather) and copy its token.
 2. Send the bot a message, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and copy the numeric Chat ID from the response.
-3. Open *BLEUnlock > Telegram Notifications > Configure…* and save both values.
-4. Send a test notification, choose the event switches, and enable Telegram.
-5. If photo alerts are enabled, approve Camera access when macOS asks.
+3. Open *BLEUnlock > Notification Settings > Configure…* and save both values.
 
-The approved event defaults are `away`, `lost`, and `intruded` on, with `unlocked` off. Telegram itself starts disabled. Photo capture for `intruded` is on by default; `intruded` is the only event that can include a photo, and all other event notifications are text-only. If Camera access is denied or capture fails, the `intruded` alert is sent as text only. Each temporary intrusion photo is deleted after its send attempt, whether the attempt succeeds or fails.
+For **Synology Chat**, you need an incoming webhook (create one in *Synology Chat > Settings > Integration*), a DSM username and password or a personal API token (for accounts with two-factor authentication enabled), and the numeric ID of the channel that should receive notifications. Open *BLEUnlock > Notification Settings > Configure…* and save these values.
 
-The legacy `~/Library/Application Scripts/jp.sone.BLEUnlock/event` script remains available and continues to receive all four event arguments independently of Telegram.
+A channel can be enabled only after it is configured. Then send a test notification, choose the event switches, and enable notifications.
+
+The approved event defaults are `away`, `lost`, and `intruded` on, with `unlocked` off. Notifications start disabled. Photo capture for `intruded` is on by default; `intruded` is the only event that can include a photo, and all other event notifications are text-only. If Camera access is denied or capture fails, the `intruded` alert is sent as text only. Each temporary intrusion photo is deleted after its send attempt, whether the attempt succeeds or fails.
+
+The legacy `~/Library/Application Scripts/jp.sone.BLEUnlock/event` script remains available and continues to receive all four event arguments independently of the selected channel.
 
 ## Options
 
@@ -168,7 +172,7 @@ An argument is passed depending on the type of event:
 
 ### Historical LINE Notify example (unsupported)
 
-Older versions of this README showed a LINE Notify and SnapshotUnlocker script here. LINE Notify has been discontinued, so that historical endpoint and example are unsupported and no longer functional. Use BLEUnlock's built-in Telegram notifications or connect another current service through the legacy `event` script.
+Older versions of this README showed a LINE Notify and SnapshotUnlocker script here. LINE Notify has been discontinued, so that historical endpoint and example are unsupported and no longer functional. Use BLEUnlock's built-in notification settings or connect another current service through the legacy `event` script.
 
 ## Building from source
 

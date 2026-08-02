@@ -70,21 +70,25 @@ brew install bleunlock
 
 對於受支援的 Apple 裝置，當使用者指定的裝置名稱與偵測到的硬體型號皆可取得時，BLEUnlock 會將兩者合併顯示，例如 `Fred's iPhone (iPhone 16 Pro Max)`。若只有 `iPhone` 或 `iPad` 這類通用名稱，BLEUnlock 會改為顯示偵測到的型號。
 
-## Telegram 通知
+## 通知設定
 
-Telegram 通知是選用功能；在設定並啟用前會維持停用：
+通知是選用功能；在設定並啟用前會維持停用。通知只會透過其中一個頻道送出，可在 *通知頻道* 子選單中切換（單選，預設為 Telegram）。
+
+**Telegram** 沿用原有的設定方式：
 
 1. 使用 [@BotFather](https://t.me/BotFather) 建立機器人，並複製其 Token。
 2. 傳送一則訊息給該機器人，接著開啟 `https://api.telegram.org/bot<TOKEN>/getUpdates`，從回應中複製數字型 Chat ID。
-3. 開啟 *BLEUnlock > Telegram 通知 > 設定…*（英文介面：*BLEUnlock > Telegram Notifications > Configure…*），並儲存這兩個值。
-4. 傳送測試通知、選擇事件開關，然後啟用 Telegram。
-5. 若啟用照片警示，macOS 詢問時請允許相機存取權。
+3. 開啟 *BLEUnlock > 通知設定 > 設定…*（英文介面：*BLEUnlock > Notification Settings > Configure…*），並儲存這兩個值。
 
-事件的預設設定為 `away`、`lost`、`intruded` 開啟，`unlocked` 關閉。Telegram 本身預設為停用。`intruded` 的拍照預設為開啟；只有 `intruded` 事件可附加照片，其他事件通知皆只有文字。若拒絕相機權限或拍照失敗，`intruded` 警示仍會以純文字送出。每張暫存的入侵照片都會在每次傳送嘗試後刪除，不論該次傳送成功或失敗。
+**Synology Chat** 需要收件網頁掛勾（在 *Synology Chat > 設定 > 整合* 中建立）、DSM 使用者名稱與密碼（啟用雙重驗證的帳號可使用個人 API Token），以及通知目標頻道的數字型 ID。開啟 *BLEUnlock > 通知設定 > 設定…* 並儲存這些值。
 
-若為照片警示啟用可選的 Mac 定位功能，照片說明文字會包含座標、精確度與 Apple 地圖連結，之後會再傳送一則原生 Telegram 位置訊息。若定位資訊無法取得，照片仍會送出，並帶有定位無法使用的說明文字；不會傳送地圖訊息。
+頻道必須先完成設定才能啟用。之後傳送測試通知、選擇事件開關，然後啟用通知。
 
-舊有的 `~/Library/Application Scripts/jp.sone.BLEUnlock/event` 指令稿仍可使用，且不受 Telegram 影響，會繼續個別接收全部四種事件引數。
+事件的預設設定為 `away`、`lost`、`intruded` 開啟，`unlocked` 關閉。通知本身預設為停用。`intruded` 的拍照預設為開啟；只有 `intruded` 事件可附加照片，其他事件通知皆只有文字。若拒絕相機權限或拍照失敗，`intruded` 警示仍會以純文字送出。每張暫存的入侵照片都會在每次傳送嘗試後刪除，不論該次傳送成功或失敗。
+
+若為照片警示啟用可選的 Mac 定位功能，照片說明文字會包含座標、精確度與 Apple 地圖連結；Telegram 會再另外傳送一則原生位置訊息，Synology Chat 則只使用說明文字中的地圖連結（不支援原生位置訊息）。若定位資訊無法取得，照片仍會送出，並帶有定位無法使用的說明文字；不會傳送地圖訊息。
+
+舊有的 `~/Library/Application Scripts/jp.sone.BLEUnlock/event` 指令稿仍可使用，且不受選取的頻道影響，會繼續個別接收全部四種事件引數。
 
 ## 選項
 
@@ -183,7 +187,7 @@ sudo pkill bluetoothd
 
 ### 歷史 LINE Notify 範例（已不支援）
 
-本 README 的舊版本曾在此提供 LINE Notify 與 SnapshotUnlocker 指令稿。LINE Notify 已停止服務，因此該歷史端點與範例不受支援，且已無法運作。請改用 BLEUnlock 內建的 Telegram 通知，或透過舊有的 `event` 指令稿串接其他現行服務。
+本 README 的舊版本曾在此提供 LINE Notify 與 SnapshotUnlocker 指令稿。LINE Notify 已停止服務，因此該歷史端點與範例不受支援，且已無法運作。請改用 BLEUnlock 內建的通知設定，或透過舊有的 `event` 指令稿串接其他現行服務。
 
 ## 從原始碼編譯
 
