@@ -41,6 +41,7 @@
 		7E1000093000000000000001 /* KeychainStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000233000000000000001 /* KeychainStoreTests.swift */; };
 		7E10000A3000000000000001 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E1000253000000000000001 /* Security.framework */; };
 		7E10000B3000000000000001 /* TelegramNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000263000000000000001 /* TelegramNotifier.swift */; };
+		7E1000553000000000000001 /* SynologyNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000543000000000000001 /* SynologyNotifier.swift */; };
 		7E10000C3000000000000001 /* TelegramNotifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000273000000000000001 /* TelegramNotifierTests.swift */; };
 		7E10000D3000000000000001 /* CameraCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000283000000000000001 /* CameraCaptureTests.swift */; };
 		7E10000E3000000000000001 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000293000000000000001 /* CameraCapture.swift */; };
@@ -52,6 +53,7 @@
 		7E1000333000000000000001 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000343000000000000001 /* LocalizationTests.swift */; };
 		7E1000353000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7E1000363000000000000001 /* InfoPlist.strings */; };
 		7E1000433000000000000001 /* BLEScanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000423000000000000001 /* BLEScanTests.swift */; };
+		7E1000573000000000000001 /* SynologyNotifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1000563000000000000001 /* SynologyNotifierTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -131,6 +133,7 @@
 		7E1000243000000000000001 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		7E1000253000000000000001 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		7E1000263000000000000001 /* TelegramNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotifier.swift; sourceTree = "<group>"; };
+		7E1000543000000000000001 /* SynologyNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynologyNotifier.swift; sourceTree = "<group>"; };
 		7E1000273000000000000001 /* TelegramNotifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramNotifierTests.swift; sourceTree = "<group>"; };
 		7E1000283000000000000001 /* CameraCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureTests.swift; sourceTree = "<group>"; };
 		7E1000293000000000000001 /* CameraCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCapture.swift; sourceTree = "<group>"; };
@@ -139,6 +142,7 @@
 		7E10002E3000000000000001 /* NotificationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationServiceTests.swift; sourceTree = "<group>"; };
 		7E10002F3000000000000001 /* NotificationMenuControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationMenuControllerTests.swift; sourceTree = "<group>"; };
 		7E1000313000000000000001 /* NotificationMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationMenuController.swift; sourceTree = "<group>"; };
+		7E1000563000000000000001 /* SynologyNotifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynologyNotifierTests.swift; sourceTree = "<group>"; };
 		7E1000343000000000000001 /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
 		7E1000373000000000000001 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Base; path = Base.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		7E1000383000000000000001 /* da */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = da; path = da.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -235,6 +239,7 @@
 				7E10002C3000000000000001 /* NotificationService.swift */,
 				7E1000293000000000000001 /* CameraCapture.swift */,
 				7E1000263000000000000001 /* TelegramNotifier.swift */,
+				7E1000543000000000000001 /* SynologyNotifier.swift */,
 				7E1000213000000000000001 /* NotificationEvent.swift */,
 				7E1000223000000000000001 /* NotificationSettings.swift */,
 				7E1000243000000000000001 /* KeychainStore.swift */,
@@ -283,6 +288,7 @@
 				7E1000283000000000000001 /* CameraCaptureTests.swift */,
 				7E1000233000000000000001 /* KeychainStoreTests.swift */,
 				7E1000273000000000000001 /* TelegramNotifierTests.swift */,
+				7E1000563000000000000001 /* SynologyNotifierTests.swift */,
 				7E1000113000000000000001 /* NotificationSettingsTests.swift */,
 				7E1000123000000000000001 /* TestDoubles.swift */,
 			);
@@ -465,6 +471,7 @@
 				7E10002B3000000000000001 /* NotificationService.swift in Sources */,
 				7E10000E3000000000000001 /* CameraCapture.swift in Sources */,
 				7E10000B3000000000000001 /* TelegramNotifier.swift in Sources */,
+				7E1000553000000000000001 /* SynologyNotifier.swift in Sources */,
 				7E1000063000000000000001 /* NotificationEvent.swift in Sources */,
 				7E1000073000000000000001 /* NotificationSettings.swift in Sources */,
 				7E1000083000000000000001 /* KeychainStore.swift in Sources */,
@@ -493,6 +500,7 @@
 				7E10000D3000000000000001 /* CameraCaptureTests.swift in Sources */,
 				7E1000093000000000000001 /* KeychainStoreTests.swift in Sources */,
 				7E10000C3000000000000001 /* TelegramNotifierTests.swift in Sources */,
+				7E1000573000000000000001 /* SynologyNotifierTests.swift in Sources */,
 				7E1000013000000000000001 /* NotificationSettingsTests.swift in Sources */,
 				7E1000023000000000000001 /* TestDoubles.swift in Sources */,
 			);

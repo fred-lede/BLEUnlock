@@ -207,7 +207,7 @@ final class LocalizationTests: XCTestCase {
 
         let sourceFiles = [
             "CameraCapture.swift", "KeychainStore.swift", "NotificationMenuController.swift",
-            "NotificationService.swift", "TelegramNotifier.swift"
+            "NotificationService.swift", "SynologyNotifier.swift", "TelegramNotifier.swift"
         ]
         let expression = try NSRegularExpression(
             pattern: #"(?:t|NSLocalizedString)\("((?:telegram|notification|synology)_[^\"]+)"#
@@ -236,7 +236,7 @@ final class LocalizationTests: XCTestCase {
 
     func testNotificationSourcesDoNotContainHardCodedEnglishErrorsOrLabels() throws {
         let files = ["CameraCapture.swift", "KeychainStore.swift",
-                     "NotificationService.swift", "TelegramNotifier.swift"]
+                     "NotificationService.swift", "SynologyNotifier.swift", "TelegramNotifier.swift"]
         let source = try files.map {
             try String(contentsOf: repository.appendingPathComponent("BLEUnlock/\($0)"))
         }.joined(separator: "\n")

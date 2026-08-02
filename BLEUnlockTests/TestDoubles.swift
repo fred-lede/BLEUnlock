@@ -37,6 +37,21 @@ final class RecordingHTTPTransport: HTTPTransport {
     }
 }
 
+final class QueuedHTTPTransport: HTTPTransport {
+    var requests: [URLRequest] = []
+    var results: [Result<(Data, HTTPURLResponse), Error>] = []
+
+    func perform(_ request: URLRequest,
+                 completion: @escaping (Result<(Data, HTTPURLResponse), Error>) -> Void) {
+        requests.append(request)
+        if results.isEmpty {
+            completion(.failure(NSError(domain: "QueuedHTTPTransport", code: -1)))
+        } else {
+            completion(results.removeFirst())
+        }
+    }
+}
+
 final class RecordingTelegramSender: TelegramSending {
     struct TextCall {
         let credentials: TelegramCredentials

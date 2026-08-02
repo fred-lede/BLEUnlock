@@ -199,7 +199,7 @@ private struct TelegramResponse: Decodable {
     let description: String?
 }
 
-private extension Data {
+extension Data {
     mutating func appendMultipartField(name: String, value: String, boundary: String) {
         append(Data("--\(boundary)\r\n".utf8))
         append(Data("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".utf8))
