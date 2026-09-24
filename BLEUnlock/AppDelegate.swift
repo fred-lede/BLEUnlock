@@ -434,15 +434,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     func storePassword(_ password: String) {
         let pw = password.data(using: .utf8)!
         
-        let query: [String: Any] = [
+        let deleteQuery: [String: Any] = [
+            String(kSecClass): kSecClassGenericPassword,
+            String(kSecAttrAccount): NSUserName(),
+            String(kSecAttrService): Bundle.main.bundleIdentifier ?? "BLEUnlock",
+            String(kSecAttrLabel): "BLEUnlock",
+        ]
+        SecItemDelete(deleteQuery as CFDictionary)
+        
+        let addQuery: [String: Any] = [
             String(kSecClass): kSecClassGenericPassword,
             String(kSecAttrAccount): NSUserName(),
             String(kSecAttrService): Bundle.main.bundleIdentifier ?? "BLEUnlock",
             String(kSecAttrLabel): "BLEUnlock",
             String(kSecValueData): pw,
         ]
-        SecItemDelete(query as CFDictionary)
-        let status = SecItemAdd(query as CFDictionary, nil)
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
         guard status == errSecSuccess else {
             let err = SecCopyErrorMessageString(status, nil)
             errorModal("Failed to store password to Keychain", info: err as String? ?? "Status \(status)")
